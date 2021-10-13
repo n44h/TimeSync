@@ -10,7 +10,7 @@ A timezone, time frame pair is called a "constraint".
 
 ## Commands
 
-### Adding a Limit:
+### Add Constraint:
 Add a new constraint.
 
 `add {utc_offset} {startTime} {endTime}`
@@ -23,23 +23,23 @@ Add a new constraint.
 - 6:30pm  \-\> 1830
 - 12am    \-\> 0000  
 
-Here is an example command to add a limit: `add +4 1430 1700`
+Here is an example command to add a constraint: `add +4 1430 1700`
 
-### Clearing all the Constraints:
+### Clear Constraints:
 Clear all the constraints that have been set.
 
 `clear con`
 
-### Finding the common time frame:
-Find a common time frame if it exists.
+### Find Common Time Frame:
+Find a common time frame within the constraints if one exists.
 
 `run` 
 
-### Visualize the time frames:
+### Visualize Constraints:
 Visualize all the constraints in UTC time accurate to 30 mins.
 
 `vis`
 
-### Terminate the script:
+### Terminate the Script:
 
 `quit`
