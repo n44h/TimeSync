@@ -1,4 +1,4 @@
-# Common Time
+# Cross Timezone Coordinator
 Python script to find a common time frame within several time frame constraints with different timezones.
 
 A period of time is called a "time frame".
