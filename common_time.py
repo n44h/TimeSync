@@ -1,108 +1,108 @@
+'''
+Add constraint format:
+
+> add dd-mm-yy hhmm hhmm
+      -------- ---- ----
+          |     |    |
+          |     |    |-> the end time
+          |     |-> the start time
+          |-> the date of the start time (because we are not using a naive system)
+
+'''
+# The cross_timezone_coordinator is restricted to finding a common timeframe within a 48hr period.
+
 import re
 import sys
 from datetime import datetime, timedelta
-import time
 import requests
-import json
 
+# File where the API key is stored.
+API_KEY_LOCATION = 'API_KEY.txt'
+API_KEY = '' # API key for Abstract API (https://www.abstractapi.com/).
+
+'''
+NOTE: We need a date to assign our datetime object as we are create 'aware' datetime objects.
+      Hence, regardless of the actual dates of the constraints, we use the current date in the system.
+'''
 # Datetime format.
-dt_format = '%d/%m/%y %H:%M:%S'
-date_today = datetime.now().strftime('%d/%m/%y')
+dt_format = '%Y-%m-%d %H:%M:%S'
+date_today = datetime.now().strftime('%Y-%m-%d')
 
 # Stores the startTimes of each limit in GMT/UTC time.
-startTimes = []
+start_times = []
 
 # Stores the endTimes of each limit in GMT/UTC time.
-endTimes = []
+end_times = []
 
-# Date for each timeframe
-date= []
+# Variable to keep count of the number of constraints.
+constraint_count = 0
 
-# Variable to keep count of the number of limits.
-limit_count = 0
+# Method to load the API key from a text file.
+def load_API_KEY():
+    global API_KEY
+    with open(API_KEY_LOCATION) as f:
+        API_KEY = f.readline()
 
-def getAPI_KEY():
-    with open('API_KEY.txt') as f:
-        return f.readline()
-
-def convertToUTC(BASE_LOCATION, BASE_DATETIME): 
-    API_KEY = getAPI_KEY() # API key for Abstract API (https://www.abstractapi.com/).
-    TARGET_TIMEZONE = "UTC"
-    BASE_UNIX_TIMESTAMP = str(datetime.timestamp(BASE_DATETIME)*1000)
+def convertToUTCOffsetZero(BASE_LOCATION, BASE_DATETIME_OBJ):
+    TARGET_LOCATION = "Greenwich, United Kingdom"
+    BASE_DATETIME = BASE_DATETIME_OBJ.strftime(dt_format)
 
     # Sending API request
     try:
-        response = requests.get(f"https://api.timezonedb.com/v2.1/convert-time-zone?key={API_KEY}&format=json&from={BASE_LOCATION}&to={TARGET_TIMEZONE}&time={BASE_UNIX_TIMESTAMP}")
+        response = requests.get(f"https://timezone.abstractapi.com/v1/convert_time/?api_key={API_KEY}&base_location={BASE_LOCATION}&base_datetime={BASE_DATETIME}&target_location={TARGET_LOCATION}")
     except Exception as e:
+        print(f"Abstract API Request failed. This may be caused due to an invalid location input or incorrect request format.\n")
         print(e)
 
     # Checking status code.
     if response.status_code <= 299:
         print(f"API Time Request completed with status code: {response.status_code}.\n")
     else:
-        print(f"API Time Request failed with status code: {response.status_code}.\n")
-        
-    # converting the json to readable dictionary and then getting the value of 'toTimestamp'
-    UTC_timestamp = int(response.json()['toTimestamp'])
-    print(UTC_timestamp)
-    # converting unix timestamp to date object and returning
-    return datetime.fromtimestamp(UTC_timestamp)
+        print(f"API Time Request failed with status code: {response.status_code}.\n\
+            This may be caused due to an invalid location input.\n")
+
+    # Converting response to json and getting 'datetime' value and returning it as a datetime object.
+    return datetime.strptime(response.json()['target_location']['datetime'], dt_format)
 
 
-def add(input):
-    global limit_count,startTimes,endTimes
-
-    # Extracting the timezone from the string.
-    location = (re.findall('\w+,\w+', input))[0].upper()
-
-    # Extracting the StartTime and endTime into a list.
-    time_stamps = re.findall('\d\d\d\d', input)
+def add(location, start_time_str, end_time_str):
+    global constraint_count,start_times,end_times
 
     # Adding the colon in the time strings. 0900 -> 09:00
-    start_datetime_object = datetime.strptime(f'{date_today} {time_stamps[0][:2]}:{time_stamps[0][2:]}:00', dt_format)
-    end_datetime_object = datetime.strptime(f'{date_today} {time_stamps[1][:2]}:{time_stamps[1][2:]}:00', dt_format)
-
-    print(start_datetime_object.strftime('%d/%m/%y %H:%M:%S'))
-    print(end_datetime_object.strftime('%d/%m/%y %H:%M:%S'))
+    start_datetime_object = datetime.strptime(f'{date_today} {start_time_str[0:2]}:{start_time_str[2:]}:00', dt_format)
+    end_datetime_object = datetime.strptime(f'{date_today} {end_time_str[0:2]}:{end_time_str[2:]}:00', dt_format)
 
     # Adding the startTime as a datetime object.
-    startTimes.append(convertToUTC(location, start_datetime_object))
-
-    # Wait for a little over 1 second because the API has a restriction of 1 API call per second.
-    time.sleep(1.2)
+    start_times.append(convertToUTCOffsetZero(location, start_datetime_object))
 
     # Checking if endTime is less than startTime (this means that the endTime is in the next day).
     if start_datetime_object < end_datetime_object :
-        endTimes.append(convertToUTC(location, end_datetime_object))
+        end_times.append(convertToUTCOffsetZero(location, end_datetime_object))
     else:
-        endTimes.append(convertToUTC(location, end_datetime_object + timedelta(days=1)))
+        end_times.append(convertToUTCOffsetZero(location, end_datetime_object + timedelta(days=1)))
    
     # Incrementing limit_count.
-    limit_count += 1
+    constraint_count += 1
 
 def clear():
-    global limit_count,startTimes,endTimes
-
-    startTimes.clear()
-    endTimes.clear()
-    limit_count = 0
+    global constraint_count,start_times,end_times
+    start_times.clear()
+    end_times.clear()
+    constraint_count = 0
 
 def run():
-    global startTimes,endTimes
+    global start_times,end_times
 
-    print(startTimes[0].strftime(dt_format))
-    print(endTimes[0].strftime(dt_format))
-
-    op_startTime = startTimes[0]
-    op_endTime = endTimes[0]
+    op_startTime = start_times[0]
+    op_endTime = end_times[0]
 
     # Finding the latest start time.
-    for item in startTimes:
+    for item in start_times:
         if op_startTime > item:
             op_startTime = item
 
     # Finding the earliest end time.
-    for item in endTimes:
+    for item in end_times:
         if op_endTime < item:
             op_endTime = item    
 
@@ -110,8 +110,9 @@ def run():
     if op_startTime < op_endTime:
         common_time_frame = f'from {op_startTime.strftime("%H:%M")} to {op_endTime.strftime("%H:%M")}'
         delta = op_endTime - op_startTime
-        duration = f'{delta.hours}:{delta.minutes}'
-        print(f'\nCommon time frame {common_time_frame} ({duration})\n')
+        difference = divmod(delta.days*1440 + (delta.seconds)/60, 60)
+        duration = f'{int(difference[0])} hours and {int(difference[1])} minutes'
+        print(f'\nThere is a common time frame {common_time_frame} ({duration})\n')
     else:
         print("\nNo common time frame for the set limits.\n")
 
@@ -119,22 +120,22 @@ def vis():
     # Keeps count of how many times the reference datetime object is incremented.
     increment_counter = 0
 
-    for n in range(len(startTimes)):
+    for n in range(len(start_times)):
         # Creating a reference datetime which the other datetime objects will be measured against.
-        reference_datetime = startTimes[0]
-        reference_datetime  
+        reference_datetime = datetime.strptime(f'{date_today} 00:00:00', dt_format)
+        increment_counter = 0
         output = ''
-        while reference_datetime < startTimes[n]:
+        while reference_datetime < start_times[n]:
             output += '|'
             # Incrementing by 30 mins.
             reference_datetime += timedelta(minutes = 30)
             increment_counter+=1
-        while reference_datetime < endTimes[n]:
-            output += ' '
+        while reference_datetime < end_times[n]:
+            output += '#'
             # Incrementing by 30 mins.
             reference_datetime += timedelta(minutes = 30)
             increment_counter+=1
-        while increment_counter < 49:
+        while increment_counter < 98:
             output += '|'
             # Incrementing by 30 mins.
             reference_datetime += timedelta(minutes = 30)
@@ -142,28 +143,65 @@ def vis():
         
         print(f'{output}\n')
 
+def validateTime(time):
+    return (len(time) == 4 and int(time[0:2]) <= 23 and int(time[2:]) <= 59)
 
+def main():
+    # Loading the API key from the txt file.
+    load_API_KEY()
 
-while True:
-    user_command = input("command: ")
+    print('\n\n\nRunning Cross Timezone Coordinator...\n\
+        Commands: add   - add a new constraint\n\
+                  run   - run the script and get the common time frame\n\
+                  clear - clear all the constraits\n\
+                  vis   - visualize the constraints\n\
+                  quit  - quit Cross Timezone Coordinator\n')
 
-    if "add" in user_command:
-        if re.search('add\s\w+,\w+\s([0,1]\d[0-5]\d|[2][0-3][0-5]\d)\s([0,1]\d[0-5]\d|[2][0-3][0-5]\d)', user_command) != None:
-            add(user_command)
+    while True:
+        user_command = input('command: ')
+
+        if 'add' in user_command:
+            location = input('\nLocation: ')
+
+            while(True):
+                start_time = input('\nStart time (HHMM): ')
+                if validateTime(start_time):
+                    break
+                else:
+                    print('\nInvalid start time input.\n')
+
+            while(True):
+                end_time = input('\nEnd time (HHMM): ')
+                if validateTime(end_time):
+                    break
+                else:
+                    print('\nInvalid end time input.\n')
+            
+            # Adding a new constraint
+            add(location, start_time, end_time)
+
+        elif 'clear' in user_command:
+            clear()
+            print('All constraints have been cleared.')
+
+        elif user_command == 'vis':
+            if constraint_count > 1:
+                vis()
+            else:
+                print('\nYou need at least 2 constraints to visualize.')
+    
+        elif user_command == 'run':
+            if constraint_count > 1:
+                run()
+            else:
+                print('\nYou need at least 2 constraints to run.')
+    
+        elif user_command == 'quit':
+            print('\n Quiting...')
+            sys.exit()
+
         else:
             print('\nInvalid command.\n')
 
-    elif user_command == 'clear limits':
-        clear()
-
-    elif user_command == 'vis':
-        vis()
-    
-    elif user_command == 'run':
-        run()
-    
-    elif user_command == 'quit':
-        sys.exit()
-
-    else:
-        print('\nInvalid command.\n')
+# Running script.
+main()
