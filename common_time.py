@@ -1,14 +1,3 @@
-'''
-Add constraint format:
-
-> add dd-mm-yy hhmm hhmm
-      -------- ---- ----
-          |     |    |
-          |     |    |-> the end time
-          |     |-> the start time
-          |-> the date of the start time (because we are not using a naive system)
-
-'''
 # The cross_timezone_coordinator is restricted to finding a common timeframe within a 48hr period.
 
 import re
