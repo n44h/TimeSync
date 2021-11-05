@@ -1,93 +1,3 @@
-'''
-Wrote this to find a common free time for people living in different time zones.
-This script is used to find a common time frame from several time frame inputs.
-
-The period of time each person is free is called a "time frame".
-Time frames are in 24hr format and have a "starting" and "ending" time.
-
-For example: 13:00 to 18:00. 13:00 is the starting time and 18:00 is 
-the ending time for this time frame.
-
-Each time frame is accompanied by a timezone.
-Timezones are communicated with reference to GMT/UTC.
-
-Each timezone and time frame pair is called a "limit".
-
-
---------------------------------------------------------------------------
-
--> Adding a Limit:
-The command to add a new limit is: 
-
->> add {city},{country} {startTime} {endTime} <<
-
-{city} and {country} are used to find the UTC offset, taking into account Daylight Saving Time as well.
-e.g.:
-- Vancouver,Canada
-- London,UK
-- Seattle,USA
-
-{startTime} and {endTime} are in 24 hr format without the colon.
-e.g.:
-- 9am     = 0900
-- 6:30pm  = 1830
-- 12am    = 0000  
-
-Here is an example command to add a limit:
-
->> add +4 1430 1700 <<
-
---------------------------------------------------------------------------
-
--> Clearing all the Limits:
-The command to clear all the limits that have been entered:
-
->> clear limits <<
-
---------------------------------------------------------------------------
-
--> Print all the Limits:
-Command to list all the limits that have been entered:
-
->> print limits <<
-
---------------------------------------------------------------------------
-
--> Removing a specific Limit:
-To remove a specific limit, you need to know the index of the limit.
-The index can be found by just printing the limits. INDICES START FROM 0.
-
-Command to remove a limit:
-
->> remove {index} <<
-
-e.g.: 
-- To remove the 3rd limit: >> remove 2 <<
-
---------------------------------------------------------------------------
-
--> Finding the common time frame:
-Command to find a common time frame:
-
->> run << 
-
---------------------------------------------------------------------------
-
--> Visualize the time frames:
-Command to visualize the time frames accurate to 30 mins.
-
->> vis <<
-
---------------------------------------------------------------------------
-
--> Terminate the script:
-Command:
-
->> quit <<
-
---------------------------------------------------------------------------
-'''
-
 import re
 import sys
 from datetime import datetime, timedelta
@@ -102,14 +12,21 @@ date_today = datetime.now().strftime('%d/%m/%y')
 # Stores the startTimes of each limit in GMT/UTC time.
 startTimes = []
 
-# Stores the endTimes of each limit in GMt/UTC time.
+# Stores the endTimes of each limit in GMT/UTC time.
 endTimes = []
+
+# Date for each timeframe
+date= []
 
 # Variable to keep count of the number of limits.
 limit_count = 0
 
+def getAPI_KEY():
+    with open('API_KEY.txt') as f:
+        return f.readline()
+
 def convertToUTC(BASE_LOCATION, BASE_DATETIME): 
-    API_KEY = "GIEB53MNXY0K" # API key for timezoneDB.
+    API_KEY = getAPI_KEY() # API key for Abstract API (https://www.abstractapi.com/).
     TARGET_TIMEZONE = "UTC"
     BASE_UNIX_TIMESTAMP = str(datetime.timestamp(BASE_DATETIME)*1000)
 
