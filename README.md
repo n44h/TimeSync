@@ -18,8 +18,8 @@ Add a new constraint.
 #### Parameters
 
 `{city, country}` the local time will be found using Abstract's timezone API and it will account for Daylight Saving Time.
-`{startTime}` in 24hr format without the colon (HHMM).
-`{endTime}` in 24hr format without the colon (HHMM).
+`{start time}` in 24hr format without the colon (HHMM).
+`{end time}` in 24hr format without the colon (HHMM).
 
 - 9am     \-\> 0900
 - 6:30pm  \-\> 1830
