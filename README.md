@@ -28,18 +28,18 @@ Add a new constraint.
 ### Clear Constraints:
 Clear all the constraints that have been set.
 
-`clear`
+`>> clear`
 
 ### Find Common Time Frame:
 Find a common time frame within the constraints, if one exists.
 
-`run` 
+`>> run` 
 
 ### Visualize Constraints:
 Visualize all the constraints in UTC time accurate to 30 mins.
 
-`vis`
+`>> vis`
 
 ### Terminate the Script:
 
-`quit`
+`>> quit`
