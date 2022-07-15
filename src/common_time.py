@@ -1,6 +1,5 @@
 # The cross_timezone_coordinator is restricted to finding a common timeframe within a 48hr period.
 
-import re
 import sys
 from datetime import datetime, timedelta
 import requests
@@ -20,13 +19,14 @@ DATETIME_FORMAT = f'{DATE_FORMAT} {TIME_FORMAT}'
 
 date_today = datetime.now().strftime(DATE_FORMAT)
 
-# Stores the start times of each limit in GMT/UTC time.
+# Stores the start times of each constraint in UTC time.
 start_times = []
 
-# Stores the end times of each limit in GMT/UTC time.
+# Stores the end times of each constraint in UTC time.
 end_times = []
 
-# Stores the locations 
+# Stores the locations of each constraint.
+location_cache = {}
 
 # Variable to keep count of the number of constraints.
 constraint_count = 0
@@ -37,48 +37,65 @@ def load_API_KEY():
     with open(API_KEY_LOCATION) as f:
         API_KEY = f.readline()
 
-def convertToUTCOffsetZero(BASE_LOCATION, BASE_DATETIME_OBJ):
+def getOffsetFromDatetime(datetime_obj1, datetime_obj2):
+    if datetime_obj1 == datetime_obj2:
+        return 0
+    elif datetime_obj1 > datetime_obj2:
+        delta = datetime_obj1 - datetime_obj2
+        return delta.hours + delta.mins/60
+    else:
+        delta = datetime_obj2 - datetime_obj1
+        return delta.hours + delta.mins/60
+
+def getTimeAtUTCOffsetZero(BASE_LOCATION, BASE_DATETIME_OBJ):
     TARGET_LOCATION = "Greenwich, United Kingdom"
     BASE_DATETIME = BASE_DATETIME_OBJ.strftime(DATETIME_FORMAT)
 
-    # Sending API request
-    try:
-        response = requests.get(f"https://timezone.abstractapi.com/v1/convert_time/\
-                                ?api_key={API_KEY}\
-                                &base_location={BASE_LOCATION}\
-                                &base_datetime={BASE_DATETIME}\
-                                &target_location={TARGET_LOCATION}")
-    except Exception as e:
-        print(f"Timezone API Request failed. This may be caused due to an invalid location input or incorrect request format.\n")
-        print(e)
-
-    # Checking status code.
-    if response.status_code <= 299:
-        print(f"Timezone API Request completed with status code: {response.status_code}.\n")
-        
-        # Converting response to json and getting 'datetime' value and returning it as a datetime object.
-        return datetime.strptime(response.json()['target_location']['datetime'], DATETIME_FORMAT)
+    # Checking if the UTC offset for this location exists in the cache.
+    utc_offset = location_cache.get(BASE_LOCATION)
+    if utc_offset != None:
+        return BASE_DATETIME_OBJ + timedelta(hours = (utc_offset*-1))
     else:
-        print(f"API Time Request failed with status code: {response.status_code}. \nThis may be caused due to an invalid location input.\n")
+        # Sending API request
+        try:
+            response = requests.get(f"https://timezone.abstractapi.com/v1/convert_time/\?api_key={API_KEY}&base_location={BASE_LOCATION}&base_datetime={BASE_DATETIME}&target_location={TARGET_LOCATION}")
+        except Exception as e:
+            print(f"Timezone API Request failed. This may be caused due to an invalid location input or incorrect request format.\n")
+            print(e)
+
+        # Checking status code.
+        if response.status_code <= 299:
+            print(f"Timezone API Request completed with status code: {response.status_code}.\n")
+
+            # Converting response to json, getting 'datetime' value and creating a datetime object.
+            TARGET_DATETIME_OBJ = datetime.strptime(response.json()['target_location']['datetime'], DATETIME_FORMAT)
+        
+            # Cache the location's UTC offset.
+            global location_cache
+            location_cache[BASE_LOCATION] = getOffsetFromDatetime(BASE_DATETIME_OBJ, TARGET_DATETIME_OBJ)
+        
+            return TARGET_DATETIME_OBJ
+        else:
+            print(f"API Time Request failed with status code: {response.status_code}. \nThis may be caused due to an invalid location input.\n")
 
     
 
 
 def add(location, start_time_str, end_time_str):
-    global constraint_count,start_times,end_times
+    global constraint_count,start_times,end_times,location_cache
 
     # Adding the colon in the time strings. 0900 -> 09:00
     start_datetime_object = datetime.strptime(f'{date_today} {start_time_str[0:2]}:{start_time_str[2:]}:00', DATETIME_FORMAT)
     end_datetime_object = datetime.strptime(f'{date_today} {end_time_str[0:2]}:{end_time_str[2:]}:00', DATETIME_FORMAT)
 
     # Adding the startTime as a datetime object.
-    start_times.append(convertToUTCOffsetZero(location, start_datetime_object))
+    start_times.append(getTimeAtUTCOffsetZero(location, start_datetime_object))
 
     # Checking if endTime is less than startTime (this means that the endTime is in the next day).
     if start_datetime_object < end_datetime_object :
-        end_times.append(convertToUTCOffsetZero(location, end_datetime_object))
+        end_times.append(getTimeAtUTCOffsetZero(location, end_datetime_object))
     else:
-        end_times.append(convertToUTCOffsetZero(location, end_datetime_object + timedelta(days=1)))
+        end_times.append(getTimeAtUTCOffsetZero(location, end_datetime_object + timedelta(days=1)))
     # Incrementing limit_count.
     constraint_count += 1
 
