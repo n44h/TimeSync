@@ -1,5 +1,3 @@
-src/API_KEY.txt
-.vscode/launch.json
 src/UTC_offset.json
 src/test.py
 /.idea/.gitignore
