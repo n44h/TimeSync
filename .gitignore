@@ -1,8 +1,8 @@
 src/UTC_offset.json
 src/test.py
 /.idea/.gitignore
-/.idea/Cross_Timezone_Coordinator.iml
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/vcs.xml
+/.idea/Meridian.iml
