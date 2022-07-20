@@ -1,163 +1,252 @@
 import sys
-import argparse
-from datetime import datetime, timedelta
-from timeframe import TimeFrame
+from datetime import datetime
+from typing import Tuple
+from utils import clear_screen, validate_datetime, validate_offset
+from utils import TimeFrame
 
 
-"""
-NOTE: We need to assign the datetime objects a date as we are create 'aware' datetime objects.
-      Hence, regardless of the actual dates of the constraints, we use the current date in the system.
-"""
+# Datetime format.
+DATETIME_FORMAT = "%d-%m-%y %H:%M"
 
-# Datetime formats.
-DATE_FORMAT = '%Y-%m-%d'
-TIME_FORMAT = '%H:%M'
-DATETIME_FORMAT = f'{DATE_FORMAT} {TIME_FORMAT}'
-
-VALID_COMMANDS = ["add", "ls", "remove", "visualize", "find"]
-
-VALID_UTC_OFFSETS = ["-1200", "-1100", "-1000", "-0930", "-0900", "-0800", "-0700", "-0600", "-0500", "-0400",
-                     "-0330", "-0300", "-0200", "-0100", "+0000", "-0000", "+0100", "+0200", "+0300", "+0330",
-                     "+0400", "+0430", "+0500", "+0530", "+0545", "+0600", "+0630", "+0700", "+0800", "+0845",
-                     "+0900", "+0930", "+1000", "+1030", "+1100", "+1200", "+1245", "+1300", "+1400"
-                     ]
-
-timeframes = {}
+# Dict to store the timeframes.
+TIMEFRAMES = {}
 
 
 def add_timeframe(timeframe_id: str, utc_offset: str, start_time: str, end_time: str) -> None:
-    """ Add a new timeframe to Cordi
+    """ Add a new timeframe to Meridian.
 
     Args:
-        timeframe_id (str): Unique ID to reference the timeframe
-        utc_offset (str): UTC offset of the timeframe
-        start_time (str): start time of the timeframe
-        end_time (str): end time of the timeframe
+        timeframe_id (str): Unique ID to reference the timeframe.
+        utc_offset (str): UTC offset of the timeframe.
+        start_time (str): start time of the timeframe.
+        end_time (str): end time of the timeframe.
     """
 
     # If timeframe_id is None, provide default id (i.e. the timeframe's index).
     if timeframe_id is None:
-        timeframe_id = f"Timeframe {len(timeframes)-1}"
+        timeframe_id = f"Timeframe {len(TIMEFRAMES) - 1}"
 
-    # Ensure that the same timeframe_id does not exist.
-    if timeframe_id in timeframes.keys:
-        print(f"\nA timeframe with ID \"{timeframe_id}\" already exists."
-              f"\nDo you wish to overwrite the existing timeframe \"{timeframe_id}\"?")
+    # Ensure that the same timeframe_id does not already exist in TIMEFRAMES.
+    if timeframe_id in TIMEFRAMES.keys:
+        print(f"\nA timeframe with ID \"{timeframe_id}\" already exists.")
+
+        # Prompt the user whether they wish to overwrite the existing timeframe entry.
+        response = input(f"\nDo you wish to overwrite the existing timeframe \"{timeframe_id}\"? [N/y]: ")
+        if response.lower() not in ["y", "yes"]:
+            print("\nAction aborted. Timeframe entry was not overwritten.")
+            # End function execution.
+            return
 
     # Create a new TimeFrame object.
-    new_timeframe = TimeFrame(timeframe_id, utc_offset, start_time, end_time)
+    new_timeframe = TimeFrame(utc_offset, start_time, end_time)
 
     # Add the new timeframe to the "timeframes" dictionary.
-    timeframes[timeframe_id] = new_timeframe
+    TIMEFRAMES[timeframe_id] = new_timeframe
 
 
+def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
+    """ Finds the longest shared timeframe within the provided timeframes.
 
-def clear_timeframes() -> None:
-    global constraint_count,start_times,end_times
-    start_times.clear()
-    end_times.clear()
-    constraint_count = 0
+    Returns:
+        The shared timeframe among the provided timeframes. Returns None if a shared timeframe does not exist.
+    """
 
-def run():
-    global start_times,end_times
+    # Create a list containing the values of the TIMEFRAMES dictionary.
+    timeframes = list(TIMEFRAMES.values())
 
-    op_start_time = start_times[0]
-    op_end_time = end_times[0]
+    # Initialize (latest_start_time, earliest_end_time) to the normalized (start, end) times of the 0th timeframe.
+    latest_start_time, earliest_end_time = timeframes[0].get_norm_times()
 
-    # Finding the latest start time.
-    for this_start_time in start_times:
-        if this_start_time > op_start_time:
-            op_start_time = this_start_time
-    
-    # Finding the earliest end time.
-    for this_end_time in end_times:
-        if this_end_time < op_end_time:
-            op_end_time = this_end_time    
-    
-    # Printing the result
-    if op_start_time < op_end_time:
-        common_time_frame = f'from {op_start_time.strftime("%H:%M")} to {op_end_time.strftime("%H:%M")}'
-        delta = op_end_time - op_start_time
-        difference = divmod(delta.days*1440 + (delta.seconds)/60, 60)
-        duration = f'{int(difference[0])} hours and {int(difference[1])} minutes'
-        print(f'\nThere is a common time frame {common_time_frame} ({duration})\n')
+    # Looping through every timeframe to find the latest normalized start time and earliest normalized end time.
+    for timeframe in timeframes[1:]:
+        # Get the normalized start and end times for the TimeFrame object.
+        norm_start, norm_end = timeframe.get_norm_times()
+
+        # Assign the current timeframe's normalized start time to latest_start_time if it is later.
+        if norm_start > latest_start_time:
+            latest_start_time = norm_start
+
+        # Assign the current timeframe's normalized end time to earliest_end_time if it is earlier.
+        if norm_end < earliest_end_time:
+            earliest_end_time = norm_end
+
+    # If the latest start time is greater than the earliest end time, a shared timeframe does not exist.
+    if latest_start_time > earliest_end_time:
+        return None
+
+    # Else, return the start and end times as a tuple.
     else:
-        print("\nNo common time frame for the set constraints.\n")
+        return latest_start_time, earliest_end_time
 
-def vis():
-    """
-    NOTE: The reference datetime object must start 12 hours previous to GMT+0 to account for countries uptil GMT-12.
-          The reference datetime must also increment until 12 hours after GMT+0 to account for countries uptil GMT+12.
-    """
-    # Getting the starting date.
-    reference_datetime_start_date = (datetime.now() - timedelta(hours = 24)).strftime(DATE_FORMAT)
-    # Keeps count of how many times the reference datetime object is incremented.
-    increment_counter = 0
 
-    # Printing reference hours.
-    print('12 13 14 15 16 17 18 19 20 21 22 23 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 00 01 02 03 04 05 06 07 08 09 10 11')
-    
-    for n in range(len(start_times)):
+def print_help() -> None:
+    """ Prints the help description. """
+
+    # Print help string.
+    print(
+        """
+        Core Commands:
+            [1] add <timeframe-id> <utc-offset> <start-time> <end-time>
+            [2] find
+            [3] remove <timeframe-id>
+            [4] reset
+            [5] ls
+            [6] vis
         
-        # Creating a reference datetime which the other datetime objects will be measured against.
-        reference_datetime = datetime.strptime(f'{reference_datetime_start_date} 12:00:00', DATETIME_FORMAT)
-        increment_counter = 0
-        output = ''
-        while reference_datetime < start_times[n]:
-            output += '|' + (' ' if increment_counter%2==1 else '')
-            # Incrementing by 30 mins.
-            reference_datetime += timedelta(minutes = 30)
-            increment_counter+=1
-        while reference_datetime < end_times[n]:
-            output += '#' + (' ' if increment_counter%2==1 else '')
-            # Incrementing by 30 mins.
-            reference_datetime += timedelta(minutes = 30)
-            increment_counter+=1
-        while increment_counter < 96:
-            output += '|' + (' ' if increment_counter%2==1 else '')
-            # Incrementing by 30 mins.
-            reference_datetime += timedelta(minutes = 30)
-            increment_counter+=1
-        
-        print(f'{output}\n')
+        Helper Commands:
+            [7] clear
+            [8] help
+            [9] exit
+        """)
 
 
+def main():
+    # Clear the terminal.
+    clear_screen()
+
+    # Print the title.
+    print("\nMeridian - Find a shared timeframe among several timeframes across different timezones")
+
+    # Print help.
+    print_help()
+
+    while True:
+        # Prompt the user for command.
+        command = input(">> ")
+
+        # If command is empty, continue.
+        if command == "":
+            continue
+
+        # Split the command string into a list. Whitespace is the delimiter character.
+        command = command.split()
+        # The first string is the action to perform.
+        action = command[0]
+
+        """ Analyzing Command """
+
+        # ADD
+        if action == "add":
+            # Number of arguments.
+            if len(command) < 5:
+                print(f"\nadd: Expected 4 arguments but found {len(command) - 1}."
+                      f"\n     Required arguments: timeframe-id, utc-offset, start-time, end-time")
+                continue
+
+            # Validate utc-offset format.
+            flag, error_message = validate_offset(command[2])
+            if flag is False:
+                print(f"\n{error_message}\n")
+                continue
+
+            # Validate start-time format.
+            if not validate_datetime(command[3]):
+                print("\nadd: Incorrect format of start-time argument. Expected format: DD-MM-YY HHMM.\n")
+                continue
+
+            # Validate end-time format.
+            if not validate_datetime(command[4]):
+                print("\nadd: Incorrect format of end-time argument. Expected format: DD-MM-YY HHMM.\n")
+                continue
+
+            # Add the timeframe if it passes all the validation checks.
+            add_timeframe(timeframe_id=command[1],
+                          utc_offset=command[2],
+                          start_time=command[3],
+                          end_time=command[4])
+        # ---------- #
+
+        # FIND
+        elif action == "find":
+            # Ensure there are more than 1 timeframes provided.
+            if len(TIMEFRAMES) <= 1:
+                print(f"\nfind:{len(TIMEFRAMES)} timeframe(s) provided."
+                      "\n      Provide at least 2 timeframes to find a shared timeframe.")
+                continue
+
+            # Find the shared timeframe.
+            shared_timeframe = find_shared_timeframe()
+
+            # If None, shared time frame does not exist.
+            if shared_timeframe is not None:
+                # Convert the datetime objects to Strings.
+                start_datetime, end_datetime = shared_timeframe
+                start_datetime = datetime.strftime(start_datetime, DATETIME_FORMAT)
+                end_datetime = datetime.strftime(end_datetime, DATETIME_FORMAT)
+
+                # Print output.
+                print(f"\nShared timeframe from {start_datetime} UTC+00 to {end_datetime} UTC+00.")
+
+            else:
+                print("\nThere is no shared timeframe within the provided timeframes.")
+        # ---------- #
+
+        # REMOVE
+        elif action == "remove":
+            # Number of arguments.
+            if len(command) < 2:
+                print(f"\nremove: Expected 1 argument \"timeframe-id\" but found 0 arguments.")
+                continue
+
+            # Check if timeframe-id exists.
+            if command[1] not in TIMEFRAMES.keys:
+                print(f"\nremove: Timeframe with the ID \"{command[1]}\" does not exist.")
+                continue
+
+            # Remove the timeframe if all validation checks are passed.
+            TIMEFRAMES.pop(command[1])
+        # ---------- #
+
+        # RESET
+        elif action == "reset":
+            # Prompt the user for confirmation.
+            print("\nAre you sure you want to reset this session? This will clear all stored timeframes. [N/y]")
+            response = input(">> ")
+
+            if response.lower() in ["y", "yes"]:
+                # Clearing all values in TIMEFRAMES.
+                TIMEFRAMES.clear()
+        # ---------- #
+
+        # LIST
+        elif action == "ls":
+            pass
+        # ---------- #
+
+        # VISUALIZE
+        elif action == "vis":
+            pass
+        # ---------- #
+
+        # CLEAR
+        elif action == "clear":
+            clear_screen()
+        # ---------- #
+
+        # HELP
+        elif action == "help":
+            # Print help.
+            print_help()
+        # ---------- #
+
+        # EXIT
+        elif action == "exit":
+            # Prompt the user for confirmation.
+            print("\nAre you sure you want to exit Meridian? [N/y]")
+            response = input(">> ")
+
+            if response.lower() in ["y", "yes"]:
+                break
+        # ---------- #
+
+        # INVALID COMMAND
+        else:
+            print("Invalid command.")
+
+    # Exit the program.
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    # Create argparse instance.
-    parser = argparse.ArgumentParser(prog="Meridian",
-                                     description="Find a common timeframe within different timeframes across timezones"
-                                     )
-
-    # Add arguments.
-    parser.add_argument("command",
-                        help="The action to perform",
-                        type=str,
-                        choices=VALID_COMMANDS)
-
-    parser.add_argument("-o", "--utc-offset",
-                        help="UTC offset of the timeframe",
-                        type=str,
-                        choices=VALID_UTC_OFFSETS)
-
-    parser.add_argument("-s", "--start-time",
-                        help="Start time of the timeframe; Format: DD-MM-YY HHMM",
-                        nargs=2,
-                        type=str)
-
-    parser.add_argument("-e", "--end-time",
-                        help="End time of the timeframe; Format: DD-MM-YY HHMM",
-                        nargs=2,
-                        type=str)
-
-    parser.add_argument("-n", "--timeframe-id",
-                        help="Optionally assign an id to the timeframe",
-                        type=str)
-
-    # Parse the arguments
-    args = parser.parse_args()
-
-    if args.command == "add":
-        add_timeframe(utc_offset=args.utc_offset,
-                      start_time_str=)
+    # Invoke main().
+    main()
