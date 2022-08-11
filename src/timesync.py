@@ -13,7 +13,7 @@ TIMEFRAMES = {}
 
 
 def add_timeframe(timeframe_id: str, utc_offset: str, start_time: str, end_time: str) -> None:
-    """ Add a new timeframe to Meridian.
+    """ Add a new timeframe to TimeSync.
 
     Args:
         timeframe_id (str): Unique ID to reference the timeframe.
@@ -105,7 +105,7 @@ def main():
     clear_screen()
 
     # Print the title.
-    print("\nMeridian - Find a shared timeframe among several timeframes across different timezones")
+    print("\nTimeSync - Find a shared timeframe among several timeframes across different timezones")
 
     # Print help.
     print_help()
@@ -232,7 +232,7 @@ def main():
         # EXIT
         elif action == "exit":
             # Prompt the user for confirmation.
-            print("\nAre you sure you want to exit Meridian? [N/y]")
+            print("\nAre you sure you want to exit TimeSync? [N/y]")
             response = input(">> ")
 
             if response.lower() in ["y", "yes"]:
