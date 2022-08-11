@@ -8,7 +8,7 @@ from utils import TimeFrame
 # Datetime format.
 DATETIME_FORMAT = "%d-%m-%y %H:%M"
 
-# Dict to store the timeframes.
+# Dict to store the timeframes. Timeframes are stored as {timeframe_id: TimeFrame_object}
 TIMEFRAMES = {}
 
 
@@ -51,7 +51,7 @@ def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
         The shared timeframe among the provided timeframes. Returns None if a shared timeframe does not exist.
     """
 
-    # Create a list containing the values of the TIMEFRAMES dictionary.
+    # Create a list containing just the timeframe objects (the value attributes) from the TIMEFRAMES dictionary.
     timeframes = list(TIMEFRAMES.values())
 
     # Initialize (latest_start_time, earliest_end_time) to the normalized (start, end) times of the 0th timeframe.
