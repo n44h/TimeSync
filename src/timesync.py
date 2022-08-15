@@ -1,8 +1,8 @@
 import sys
-from datetime import datetime
 from typing import Tuple
-from utils import clear_screen, validate_datetime, validate_offset
-from utils import TimeFrame
+from datetime import datetime
+from timeframe import TimeFrame
+from utils import clear_screen, is_valid_datetime, is_valid_offset, construct_timeframe_table
 
 
 # Datetime format.
@@ -12,14 +12,14 @@ DATETIME_FORMAT = "%d-%m-%y %H:%M"
 TIMEFRAMES = {}
 
 
-def add_timeframe(timeframe_id: str, utc_offset: str, start_time: str, end_time: str) -> None:
+def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_time: datetime) -> None:
     """ Add a new timeframe to TimeSync.
 
     Args:
         timeframe_id (str): Unique ID to reference the timeframe.
         utc_offset (str): UTC offset of the timeframe.
-        start_time (str): start time of the timeframe.
-        end_time (str): end time of the timeframe.
+        start_time (datetime): start time of the timeframe.
+        end_time (datetime): end time of the timeframe.
     """
 
     # If timeframe_id is None, provide default id (i.e. the timeframe's index).
@@ -85,18 +85,22 @@ def print_help() -> None:
     # Print help string.
     print(
         """
-        Core Commands:
-            [1] add <timeframe-id> <utc-offset> <start-time> <end-time>
-            [2] find
-            [3] remove <timeframe-id>
-            [4] reset
-            [5] ls
-            [6] vis
+        TimeSync finds the longest shared timeframe between several timeframes across different timezones.
         
-        Helper Commands:
-            [7] clear
-            [8] help
-            [9] exit
+        Commands:
+            add <timeframe-id> <utc-offset> <start-time> <end-time>
+                    - add a timeframe.
+            remove <timeframe-id>
+                    - remove a timeframe.
+            reset   - clear all timeframes.
+            
+            find    - find the shared timeframe.
+            ls      - list all the timeframes.
+            vis     - visualize the timeframes.
+                    -
+            clear   - clears the screen.
+            help - view the help description.
+            exit - exit TimeSync.
         """)
 
 
@@ -123,37 +127,75 @@ def main():
         # The first string is the action to perform.
         action = command[0]
 
+        # Spacing.
+        print()
+
         """ Analyzing Command """
 
-        # ADD
+        """ 
+        ADD
+        
+        Command:
+        >> add <timeframe_id> <utc_offset> <start_time> <end_time>
+
+        Usage:
+        Case 1: Start Time and End Time are on different days:
+        >> add my-timeframe-1 +0300 14-08-22 2100 15-08-22 0200
+
+        Case 2: Start Time and End Time are in the same day, provide the date only once.
+        >> add my-timeframe-2 +0300 14-08-22 1500 2000
+        """
+
         if action == "add":
-            # Number of arguments.
-            if len(command) < 5:
-                print(f"\nadd: Expected 4 arguments but found {len(command) - 1}."
-                      f"\n     Required arguments: timeframe-id, utc-offset, start-time, end-time")
+            # Number of arguments: Min number of arguments: 6. Max number of arguments: 7.
+            if len(command) not in [6, 7]:
+                print(f"\nadd: Expected 6 or 7 arguments but found {len(command) - 1}."
+                      f"\n     Required arguments: timeframe-id, utc-offset, start-date, start-time, end-date, end-time"
+                      )
                 continue
 
+            # Breakdown the command.
+            timeframe_id = command[1]
+            utc_offset = command[2]
+            start_time = f"{command[3]} {command[4]}"
+            # If 6 arguments are provided, use the start date as the end date.
+            end_time = f"{command[3] if len(command) == 6 else command[5]} {command[-1]}"
+
             # Validate utc-offset format.
-            flag, error_message = validate_offset(command[2])
+            flag, error_message = is_valid_offset(utc_offset)
             if flag is False:
-                print(f"\n{error_message}\n")
+                print(f"\nadd: {error_message}\n")
                 continue
 
             # Validate start-time format.
-            if not validate_datetime(command[3]):
+            if not is_valid_datetime(start_time):
                 print("\nadd: Incorrect format of start-time argument. Expected format: DD-MM-YY HHMM.\n")
                 continue
 
             # Validate end-time format.
-            if not validate_datetime(command[4]):
+            if not is_valid_datetime(end_time):
                 print("\nadd: Incorrect format of end-time argument. Expected format: DD-MM-YY HHMM.\n")
                 continue
 
+            # Try to parse start_time string to datetime object.
+            try:
+                # Create datetime object for start time.
+                start_time = datetime.strptime(start_time, DATETIME_FORMAT)
+            except ValueError:
+                raise ValueError("Illegal start time argument.")
+
+            # Try to parse end_time string to datetime object.
+            try:
+                # Create datetime object for end time.
+                end_time = datetime.strptime(end_time, DATETIME_FORMAT)
+            except ValueError:
+                raise ValueError("Illegal end time argument.")
+
             # Add the timeframe if it passes all the validation checks.
-            add_timeframe(timeframe_id=command[1],
-                          utc_offset=command[2],
-                          start_time=command[3],
-                          end_time=command[4])
+            add_timeframe(timeframe_id=timeframe_id,
+                          utc_offset=utc_offset,
+                          start_time=start_time,
+                          end_time=end_time)
         # ---------- #
 
         # FIND
@@ -175,7 +217,7 @@ def main():
                 end_datetime = datetime.strftime(end_datetime, DATETIME_FORMAT)
 
                 # Print output.
-                print(f"\nShared timeframe from {start_datetime} UTC+00 to {end_datetime} UTC+00.")
+                print(f"\nShared timeframe from {start_datetime} UTC+0000 to {end_datetime} UTC+0000.")
 
             else:
                 print("\nThere is no shared timeframe within the provided timeframes.")
@@ -183,18 +225,21 @@ def main():
 
         # REMOVE
         elif action == "remove":
-            # Number of arguments.
+            # Check number of arguments.
             if len(command) < 2:
                 print(f"\nremove: Expected 1 argument \"timeframe-id\" but found 0 arguments.")
                 continue
 
-            # Check if timeframe-id exists.
-            if command[1] not in TIMEFRAMES.keys:
-                print(f"\nremove: Timeframe with the ID \"{command[1]}\" does not exist.")
+            # Store the timeframe-id argument in a variable to maintain readability.
+            timeframe_id = command[1]
+
+            # Check if the timeframe-id provided exists.
+            if timeframe_id not in TIMEFRAMES.keys:
+                print(f"\nremove: Timeframe with the ID \"{timeframe_id}\" does not exist.")
                 continue
 
             # Remove the timeframe if all validation checks are passed.
-            TIMEFRAMES.pop(command[1])
+            TIMEFRAMES.pop(timeframe_id)
         # ---------- #
 
         # RESET
@@ -210,7 +255,11 @@ def main():
 
         # LIST
         elif action == "ls":
-            pass
+            # Creating the timeframes table as a multiline string.
+            timeframes_table = construct_timeframe_table(TIMEFRAMES)
+
+            # Print the timeframes table.
+            print(timeframes_table)
         # ---------- #
 
         # VISUALIZE
