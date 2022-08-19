@@ -11,6 +11,29 @@ DATETIME_FORMAT = "%d-%m-%y %H:%M"
 # Dict to store the timeframes. Timeframes are stored as {timeframe_id: TimeFrame_object}
 TIMEFRAMES = {}
 
+# Help description.
+HELP_DESCRIPTION = """
+CLI tool to find the longest shared timeframe among several timeframes across different timezones.
+
+Commands:
+    add <timeframe-id> <utc-offset> <start-time> <end-time>
+            - add a timeframe.
+    remove <timeframe-id>
+            - remove a timeframe.
+
+    see documentation for further usage details.
+
+    reset   - clear all timeframes.
+
+    run     - find the shared timeframe.
+    ls      - list all the timeframes.
+    vis     - visualize the timeframes.
+            
+    clear   - clears the screen.
+    help    - view the help description.
+    exit    - exit TimeSync.
+"""
+
 
 def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_time: datetime) -> None:
     """ Add a new timeframe to TimeSync.
@@ -79,29 +102,15 @@ def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
         return latest_start_time, earliest_end_time
 
 
-def print_help() -> None:
+def print_help(print_divider: bool = False) -> None:
     """ Prints the help description. """
 
-    # Print help string.
-    print(
-        """
-        TimeSync finds the longest shared timeframe between several timeframes across different timezones.
-        
-        Commands:
-            add <timeframe-id> <utc-offset> <start-time> <end-time>
-                    - add a timeframe.
-            remove <timeframe-id>
-                    - remove a timeframe.
-            reset   - clear all timeframes.
-            
-            find    - find the shared timeframe.
-            ls      - list all the timeframes.
-            vis     - visualize the timeframes.
-                    -
-            clear   - clears the screen.
-            help - view the help description.
-            exit - exit TimeSync.
-        """)
+    # Print help description.
+    print(HELP_DESCRIPTION)
+
+    # Print a divider, if required.
+    if print_divider:
+        print(f"{('_' * 80)}\n")
 
 
 def main():
@@ -109,10 +118,10 @@ def main():
     clear_screen()
 
     # Print the title.
-    print("\nTimeSync - Find a shared timeframe among several timeframes across different timezones")
+    print("\nTimeSync")
 
     # Print help.
-    print_help()
+    print_help(print_divider=True)
 
     while True:
         # Prompt the user for command.
@@ -198,8 +207,8 @@ def main():
                           end_time=end_time)
         # ---------- #
 
-        # FIND
-        elif action == "find":
+        # FIND / RUN / SYNC - finding shared timeframe
+        elif action in ["find", "run", "sync"]:
             # Ensure there are more than 1 timeframes provided.
             if len(TIMEFRAMES) <= 1:
                 print(f"\nfind:{len(TIMEFRAMES)} timeframe(s) provided."
@@ -211,16 +220,18 @@ def main():
 
             # If None, shared time frame does not exist.
             if shared_timeframe is not None:
-                # Convert the datetime objects to Strings.
+                # Split the shared timeframe tuple.
                 start_datetime, end_datetime = shared_timeframe
+
+                # Convert the datetime objects to strings.
                 start_datetime = datetime.strftime(start_datetime, DATETIME_FORMAT)
                 end_datetime = datetime.strftime(end_datetime, DATETIME_FORMAT)
 
                 # Print output.
-                print(f"\nShared timeframe from {start_datetime} UTC+0000 to {end_datetime} UTC+0000.")
+                print(f"\nShared timeframe from {start_datetime} UTC+00:00 to {end_datetime} UTC+00:00.")
 
             else:
-                print("\nThere is no shared timeframe within the provided timeframes.")
+                print("\nNo shared timeframe exists among the timeframes provided.")
         # ---------- #
 
         # REMOVE
