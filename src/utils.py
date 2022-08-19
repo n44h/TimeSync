@@ -54,7 +54,7 @@ def is_valid_offset(input_offset: str) -> Tuple[bool, str]:
         flag = False
         error_message = "Incorrect format of UTC offset. Expected format: ±HHMM."
 
-    elif input_offset in VALID_UTC_OFFSETS:
+    elif input_offset not in VALID_UTC_OFFSETS:
         flag = False
         error_message = "Invalid UTC offset. Provide a valid UTC offset."
 
