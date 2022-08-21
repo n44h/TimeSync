@@ -1,6 +1,6 @@
 # TimeSync
 
-Tool to find a common timeframe within several timeframes across different timezones.  
+Tool to find a shared timeframe across different timezones.  
 
 ### How TimeSync works:
 
@@ -12,6 +12,29 @@ Similarly, the earliest normalized end point is taken as the end point of the sh
 A timeframe is one continuous period of time and cannot include breaks or intervals.
 
 
+## Formats
+The formatting rules are very relaxed for time and UTC offsets.   
+If there is an intuitive way 
+to represent the input, TimeSync will internally format it to the proper format.
+
+| Time Input | How it will be formatted |
+|------------|--------------------------|
+| :          | 00:00                    |
+| 0          | 00:00                    |
+| 4          | 04:00                    |
+| 04         | 04:00                    |
+| 15         | 15:00                    |
+| 425        | 04:25                    |
+| 4:5        | 04:05                    |
+| :35        | 00:35                    |
+| 15:        | 15:00                    |
+| 6:45       | 06:45                    |
+| 13:5       | 13:05                    |
+| 0420       | 04:20                    |
+
+#### UTC Offset Inputs
+The above-mentioned formats are accepted for UTC offset inputs as well.  
+Additionally, inputs without a sign will be assumed to be a positive UTC offset.
 
 ## Commands
 
@@ -29,7 +52,7 @@ Adding a timeframe from 10:25 to 15:30 UTC +06:00 on 12-08-22.
 Let's call the timeframe _foo_.
 
 ```shell
->> add foo +0600 12-08-22 1025 1530
+>> add foo +06 12-08-22 1025 1530
 ```
 
 #### Start point and end point are on different days.  
@@ -38,7 +61,7 @@ Adding a timeframe from 10:25 UTC +06:00 on 12-08-22 to 15:30 UTC +06:00 on 13-0
 Let's call this one _bar_.
 
 ```shell
->> add bar +0600 12-08-22 1025 13-08-22 1530
+>> add bar +06 12-08-22 1025 13-08-22 1530
 ```
 
 ___
