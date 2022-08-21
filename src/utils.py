@@ -246,7 +246,7 @@ def construct_timeframe_table(timeframes: dict) -> str:
 
     """
     # Headers strings for each column.
-    column_headers = ["Timeframe ID", "UTC Offset", "Start Time", "End time",
+    column_headers = ["Timeframe ID", "UTC Offset", "Start Time", "End Time",
                       "Normalized Start Time", "Normalized End Time"]
 
     # Determining the width of the Timeframe ID column.

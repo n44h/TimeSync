@@ -93,7 +93,7 @@ Will print a table as shown below:
 
 ```shell
 -------------------------------------------------------------------------------------------------------------
-| Timeframe ID | UTC Offset | Start Time     | End time       | Normalized Start Time | Normalized End Time |
+| Timeframe ID | UTC Offset | Start Time     | End Time       | Normalized Start Time | Normalized End Time |
 |--------------|------------|----------------|----------------|-----------------------|---------------------|
 | foo          | +04:00     | 12-08-22 09:00 | 12-08-22 20:00 | 12-08-22 05:00        | 12-08-22 16:00      |
 | bar          | -01:00     | 12-08-22 12:00 | 12-08-22 18:30 | 12-08-22 13:00        | 12-08-22 19:30      |
