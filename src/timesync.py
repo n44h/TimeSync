@@ -1,8 +1,10 @@
 import sys
 from typing import Tuple
 from datetime import datetime
+
 from timeframe import TimeFrame
-from utils import clear_screen, is_valid_datetime, is_valid_offset, construct_timeframe_table
+from utils import clear_screen, format_time, format_utc_offset, \
+    is_valid_datetime, is_valid_offset, construct_timeframe_table
 
 
 # Datetime format.
@@ -12,7 +14,7 @@ DATETIME_FORMAT = "%d-%m-%y %H:%M"
 TIMEFRAMES = {}
 
 # Help description.
-HELP_DESCRIPTION = """
+HELP_DESCRIPTION = """\
 CLI tool to find the longest shared timeframe among several timeframes across different timezones.
 
 Commands:
@@ -50,7 +52,7 @@ def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_
         timeframe_id = f"Timeframe {len(TIMEFRAMES) - 1}"
 
     # Ensure that the same timeframe_id does not already exist in TIMEFRAMES.
-    if timeframe_id in TIMEFRAMES.keys:
+    if timeframe_id in TIMEFRAMES.keys():
         print(f"\nA timeframe with ID \"{timeframe_id}\" already exists.")
 
         # Prompt the user whether they wish to overwrite the existing timeframe entry.
@@ -66,12 +68,15 @@ def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_
     # Add the new timeframe to the "timeframes" dictionary.
     TIMEFRAMES[timeframe_id] = new_timeframe
 
+    # Print success message.
+    print("Timeframe added.\n")
+
 
 def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
     """ Finds the longest shared timeframe within the provided timeframes.
 
     Returns:
-        The shared timeframe among the provided timeframes. Returns None if a shared timeframe does not exist.
+        a tuple containing the start and end times of the shared timeframe. None if a shared timeframe does not exist.
     """
 
     # Create a list containing just the timeframe objects (the value attributes) from the TIMEFRAMES dictionary.
@@ -102,8 +107,64 @@ def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
         return latest_start_time, earliest_end_time
 
 
+def remove_timeframe(timeframe_id: str) -> bool:
+    """ Remove a timeframe from TimeSync.
+
+    Args:
+        timeframe_id (str): ID of the timeframe to be removed.
+
+    Returns:
+        True if the timeframe was removed successfully.
+    """
+
+    # Check if the timeframe-id provided exists.
+    if timeframe_id not in TIMEFRAMES.keys():
+        print(f"remove: Timeframe with the ID \"{timeframe_id}\" does not exist.\n")
+        return False
+
+    # Remove the timeframe if all validation checks are passed.
+    TIMEFRAMES.pop(timeframe_id)
+    print(f"Timeframe \"{timeframe_id}\" removed.")
+    return True
+
+
+def reset() -> bool:
+    """ Clears all stored timeframes.
+
+    Returns:
+        True if all timeframes were removed successfully.
+    """
+
+    # Prompt the user for confirmation.
+    print("Are you sure you want to reset this session? This will clear all stored timeframes. [N/y]\n")
+    response = input(">> ")
+
+    if response.lower() in ["y", "yes"]:
+        # Clearing all values in TIMEFRAMES.
+        TIMEFRAMES.clear()
+        print("Removed all timeframes.\n")
+        return True
+
+    else:
+        return False
+
+
+def list_timeframes() -> None:
+    """ Prints a table of UTC offsets, start/end times and normalized start/end times of the timeframes. """
+
+    # Creating the timeframes table as a multiline string.
+    timeframes_table = construct_timeframe_table(TIMEFRAMES)
+
+    # Print the timeframes table.
+    print(timeframes_table)
+
+
 def print_help(print_divider: bool = False) -> None:
-    """ Prints the help description. """
+    """ Prints the help description.
+
+    Args:
+        print_divider (bool): prints a divider after the help message if True.
+    """
 
     # Print help description.
     print(HELP_DESCRIPTION)
@@ -140,21 +201,7 @@ def main():
         print()
 
         """ Analyzing Command """
-
-        """ 
-        ADD
-        
-        Command:
-        >> add <timeframe_id> <utc_offset> <start_time> <end_time>
-
-        Usage:
-        Case 1: Start Time and End Time are on different days:
-        >> add my-timeframe-1 +0300 14-08-22 2100 15-08-22 0200
-
-        Case 2: Start Time and End Time are in the same day, provide the date only once.
-        >> add my-timeframe-2 +0300 14-08-22 1500 2000
-        """
-
+        # ADD
         if action == "add":
             # Number of arguments: Min number of arguments: 6. Max number of arguments: 7.
             if len(command) not in [6, 7]:
@@ -165,10 +212,28 @@ def main():
 
             # Breakdown the command.
             timeframe_id = command[1]
-            utc_offset = command[2]
-            start_time = f"{command[3]} {command[4]}"
-            # If 6 arguments are provided, use the start date as the end date.
-            end_time = f"{command[3] if len(command) == 6 else command[5]} {command[-1]}"
+
+            # Format UTC offset string.
+            try:
+                utc_offset = format_utc_offset(command[2])
+            except ValueError as ve:
+                print(f"utc-offset: {ve}\n")
+                continue
+
+            # Format start time string.
+            try:
+                start_time = f"{command[3]} {format_time(command[4])}"
+            except ValueError as ve:
+                print(f"start-time: {ve}\n")
+                continue
+
+            # Format end time string.
+            try:
+                # If 6 arguments are provided, use the start date as the end date.
+                end_time = f"{command[3] if len(command) == 6 else command[5]} {format_time(command[-1])}"
+            except ValueError as ve:
+                print(f"end-time: {ve}\n")
+                continue
 
             # Validate utc-offset format.
             flag, error_message = is_valid_offset(utc_offset)
@@ -178,12 +243,12 @@ def main():
 
             # Validate start-time format.
             if not is_valid_datetime(start_time):
-                print("\nadd: Incorrect format of start-time argument. Expected format: DD-MM-YY HHMM.\n")
+                print("\nadd: Incorrect format of start-time argument. Expected format: DD-MM-YY HH:MM.\n")
                 continue
 
             # Validate end-time format.
             if not is_valid_datetime(end_time):
-                print("\nadd: Incorrect format of end-time argument. Expected format: DD-MM-YY HHMM.\n")
+                print("\nadd: Incorrect format of end-time argument. Expected format: DD-MM-YY HH:MM.\n")
                 continue
 
             # Try to parse start_time string to datetime object.
@@ -191,14 +256,16 @@ def main():
                 # Create datetime object for start time.
                 start_time = datetime.strptime(start_time, DATETIME_FORMAT)
             except ValueError:
-                raise ValueError("Illegal start time argument.")
+                print("Illegal start-time argument.")
+                continue
 
             # Try to parse end_time string to datetime object.
             try:
                 # Create datetime object for end time.
                 end_time = datetime.strptime(end_time, DATETIME_FORMAT)
             except ValueError:
-                raise ValueError("Illegal end time argument.")
+                print("Illegal end-time argument.")
+                continue
 
             # Add the timeframe if it passes all the validation checks.
             add_timeframe(timeframe_id=timeframe_id,
@@ -207,7 +274,7 @@ def main():
                           end_time=end_time)
         # ---------- #
 
-        # FIND / RUN / SYNC - finding shared timeframe
+        # FIND / RUN / SYNC
         elif action in ["find", "run", "sync"]:
             # Ensure there are more than 1 timeframes provided.
             if len(TIMEFRAMES) <= 1:
@@ -228,10 +295,10 @@ def main():
                 end_datetime = datetime.strftime(end_datetime, DATETIME_FORMAT)
 
                 # Print output.
-                print(f"\nShared timeframe from {start_datetime} UTC+00:00 to {end_datetime} UTC+00:00.")
+                print(f"Shared timeframe from {start_datetime} to {end_datetime} UTC+00:00.\n")
 
             else:
-                print("\nNo shared timeframe exists among the timeframes provided.")
+                print("No shared timeframe exists among the timeframes provided.\n")
         # ---------- #
 
         # REMOVE
@@ -241,36 +308,18 @@ def main():
                 print(f"\nremove: Expected 1 argument \"timeframe-id\" but found 0 arguments.")
                 continue
 
-            # Store the timeframe-id argument in a variable to maintain readability.
-            timeframe_id = command[1]
-
-            # Check if the timeframe-id provided exists.
-            if timeframe_id not in TIMEFRAMES.keys:
-                print(f"\nremove: Timeframe with the ID \"{timeframe_id}\" does not exist.")
-                continue
-
-            # Remove the timeframe if all validation checks are passed.
-            TIMEFRAMES.pop(timeframe_id)
+            # Remove the timeframe.
+            remove_timeframe(timeframe_id=command[1])
         # ---------- #
 
         # RESET
         elif action == "reset":
-            # Prompt the user for confirmation.
-            print("\nAre you sure you want to reset this session? This will clear all stored timeframes. [N/y]")
-            response = input(">> ")
-
-            if response.lower() in ["y", "yes"]:
-                # Clearing all values in TIMEFRAMES.
-                TIMEFRAMES.clear()
+            reset()
         # ---------- #
 
         # LIST
-        elif action == "ls":
-            # Creating the timeframes table as a multiline string.
-            timeframes_table = construct_timeframe_table(TIMEFRAMES)
-
-            # Print the timeframes table.
-            print(timeframes_table)
+        elif action in ["ls", "list"]:
+            list_timeframes()
         # ---------- #
 
         # VISUALIZE
@@ -290,9 +339,9 @@ def main():
         # ---------- #
 
         # EXIT
-        elif action == "exit":
+        elif action in ["X", "exit", "quit"]:
             # Prompt the user for confirmation.
-            print("\nAre you sure you want to exit TimeSync? [N/y]")
+            print("Are you sure you want to exit TimeSync? [N/y]")
             response = input(">> ")
 
             if response.lower() in ["y", "yes"]:
