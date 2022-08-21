@@ -98,8 +98,8 @@ def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
         if norm_end < earliest_end_time:
             earliest_end_time = norm_end
 
-    # If the latest start time is greater than the earliest end time, a shared timeframe does not exist.
-    if latest_start_time > earliest_end_time:
+    # If the latest start time is greater than or equal to the earliest end time, a shared timeframe does not exist.
+    if latest_start_time >= earliest_end_time:
         return None
 
     # Else, return the start and end times as a tuple.
