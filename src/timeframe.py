@@ -2,7 +2,7 @@ from typing import Tuple
 from datetime import datetime, timedelta
 
 # Input Datetime formats.
-IN_DATETIME_FORMAT = '%d-%m-%y %H%M'
+IN_DATETIME_FORMAT = '%d-%m-%y %H:%M'
 OUT_DATETIME_FORMAT = '%d-%m-%y %H:%M'
 
 
@@ -15,14 +15,14 @@ class TimeFrame:
         """ Initialize a TimeFrame object with 3 mandatory parameters.
 
         Args:
-            utc_offset (str): UTC offset of the time frame in format ±HHMM.
+            utc_offset (str): UTC offset of the time frame in format ±HH:MM.
             start_time (datetime | str): start time of the time frame.
             end_time (datetime | str): end time of the time frame.
         """
 
         # Splitting the offset into hour and min.
         self.offset_hour = int(utc_offset[:3])
-        self.offset_min = int(utc_offset[3:])
+        self.offset_min = int(utc_offset[4:])
 
         # UTC Offset.
         sign = "+" if self.offset_hour >= 0 else "-"
@@ -53,7 +53,7 @@ class TimeFrame:
         return self.start_time, self.end_time
 
     def get_norm_times(self) -> Tuple[datetime, datetime]:
-        """ Get the UTC+0000 normalized start and end times of the TimeFrame.
+        """ Get the UTC+00:00 normalized start and end times of the TimeFrame.
 
         Returns:
               Tuple containing the normalized start and end times.
@@ -65,7 +65,7 @@ class TimeFrame:
         """ Get the UTC offset of the TimeFrame.
 
         Returns:
-              a string of the UTC offset in the format ±HHMM.
+              a string of the UTC offset in the format ±HH:MM.
         """
 
         return self.utc_offset
@@ -83,7 +83,7 @@ class TimeFrame:
         return self.start_time.strftime(datetime_format), self.end_time.strftime(datetime_format)
 
     def get_norm_times_str(self, datetime_format: str = OUT_DATETIME_FORMAT) -> Tuple[str, str]:
-        """ Get the UTC+0000 normalized start and end times of the TimeFrame as str.
+        """ Get the UTC+00:00 normalized start and end times of the TimeFrame as str.
 
         Args:
             datetime_format (str): Optional argument to modify the datetime string format. Default: DD-MM-YY HH:MM.
