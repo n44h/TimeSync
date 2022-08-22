@@ -1,6 +1,6 @@
 # TimeSync
 
-Tool to find the longest shared timeframe across several timeframes with different timezones.  
+Tool that finds the longest common timeframe out of the inputed timeframes in different timezones. 
 
 ### How TimeSync works:
 
