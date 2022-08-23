@@ -1,6 +1,6 @@
 # TimeSync
 
-Tool that finds the longest common timeframe out of the inputed timeframes in different timezones. 
+TimeSync is a tool that finds the longest common timeframe out of the inputed timeframes in different timezones. Refer to the [Commands section](#commands) to see how to use TimeSync.
 
 ### How TimeSync works:
 
@@ -13,8 +13,8 @@ A timeframe is one continuous period of time and cannot include breaks or interv
 
 
 ## Formats
-The formatting rules are very relaxed for time and UTC offsets.   
-If there is an intuitive way 
+The formatting rules are very relaxed for time and UTC offsets.
+If there is an intuitive way
 to represent the input, TimeSync will internally format it to the proper format.  
 
 #### Time Inputs
