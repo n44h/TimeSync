@@ -6,7 +6,6 @@ from timeframe import TimeFrame
 from utils import clear_screen, format_time, format_utc_offset, \
     is_valid_datetime, is_valid_offset, construct_timeframe_table
 
-
 # Datetime format.
 DATETIME_FORMAT = "%d-%m-%y %H:%M"
 
@@ -72,7 +71,7 @@ def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_
     print("Timeframe added.\n")
 
 
-def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
+def find_shared_timeframe() -> Tuple[datetime, datetime, str] | None:
     """ Finds the longest shared timeframe within the provided timeframes.
 
     Returns:
@@ -104,7 +103,19 @@ def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
 
     # Else, return the start and end times as a tuple.
     else:
-        return latest_start_time, earliest_end_time
+        # Get the duration in seconds from the timedelta object.
+        duration = (earliest_end_time - latest_start_time).seconds
+
+        # Create duration string with number of hours.
+        duration_str = f"{duration // 3600} hour{'s' if duration >= 3600 * 2 else ''} " if duration >= 3600 else ""
+
+        # Find remaining minutes.
+        duration %= 3600
+
+        # Add number of minutes to duration string.
+        duration_str += f"{duration // 60} minute{'s' if duration % 3600 >= 60 * 2 else ''}" if duration >= 60 else ""
+
+        return latest_start_time, earliest_end_time, duration_str
 
 
 def remove_timeframe(timeframe_id: str) -> bool:
@@ -288,14 +299,14 @@ def main():
             # If None, shared time frame does not exist.
             if shared_timeframe is not None:
                 # Split the shared timeframe tuple.
-                start_datetime, end_datetime = shared_timeframe
+                start_datetime, end_datetime, duration = shared_timeframe
 
                 # Convert the datetime objects to strings.
                 start_datetime = datetime.strftime(start_datetime, DATETIME_FORMAT)
                 end_datetime = datetime.strftime(end_datetime, DATETIME_FORMAT)
 
                 # Print output.
-                print(f"Shared timeframe from {start_datetime} to {end_datetime} UTC+00:00.\n")
+                print(f"Shared timeframe from {start_datetime} to {end_datetime} UTC+00:00 ({duration}).\n")
 
             else:
                 print("No shared timeframe exists among the timeframes provided.\n")
