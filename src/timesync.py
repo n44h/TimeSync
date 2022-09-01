@@ -1,11 +1,9 @@
 import sys
-from typing import Tuple
 from datetime import datetime
 
 from timeframe import TimeFrame
-from utils import clear_screen, format_time, format_utc_offset, \
-    is_valid_datetime, is_valid_offset, construct_timeframe_table
-
+from utils import clear_screen, format_time, format_utc_offset, is_valid_datetime, is_valid_offset, \
+    construct_timeframe_table, construct_localized_times_table
 
 # Datetime format.
 DATETIME_FORMAT = "%d-%m-%y %H:%M"
@@ -15,25 +13,25 @@ TIMEFRAMES = {}
 
 # Help description.
 HELP_DESCRIPTION = """\
-CLI tool to find the longest shared timeframe among several timeframes across different timezones.
+CLI app to find the longest common timeframe among several timeframes in different timezones.
 
 Commands:
     add <timeframe-id> <utc-offset> <start-time> <end-time>
-            - add a timeframe.
+             - add a timeframe.
     remove <timeframe-id>
-            - remove a timeframe.
+             - remove a timeframe.
 
     see documentation for further usage details.
 
-    reset   - clear all timeframes.
+    reset    - clear all timeframes.
 
-    run     - find the shared timeframe.
-    ls      - list all the timeframes.
-    vis     - visualize the timeframes.
+    run/find - find the common timeframe.
+    ls       - list all the timeframes.
+    vis      - visualize the timeframes.
             
-    clear   - clears the screen.
-    help    - view the help description.
-    exit    - exit TimeSync.
+    clear    - clears the screen.
+    help     - view the help description.
+    exit     - exit TimeSync.
 """
 
 
@@ -57,7 +55,7 @@ def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_
 
         # Prompt the user whether they wish to overwrite the existing timeframe entry.
         response = input(f"\nDo you wish to overwrite the existing timeframe \"{timeframe_id}\"? [N/y]: ")
-        if response.lower() not in ["y", "yes"]:
+        if response.lower() not in {"y", "yes"}:
             print("\nAction aborted. Timeframe entry was not overwritten.")
             # End function execution.
             return
@@ -72,17 +70,13 @@ def add_timeframe(timeframe_id: str, utc_offset: str, start_time: datetime, end_
     print("Timeframe added.\n")
 
 
-def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
-    """ Finds the longest shared timeframe within the provided timeframes.
-
-    Returns:
-        a tuple containing the start and end times of the shared timeframe. None if a shared timeframe does not exist.
-    """
+def find_common_timeframe() -> None:
+    """ Finds the longest common timeframe within the provided timeframes and prints the output. """
 
     # Create a list containing just the timeframe objects (the value attributes) from the TIMEFRAMES dictionary.
     timeframes = list(TIMEFRAMES.values())
 
-    # Initialize (latest_start_time, earliest_end_time) to the normalized (start, end) times of the 0th timeframe.
+    # Initialize (latest_start_time, earliest_end_time) as the normalized (start, end) times of the 0th timeframe.
     latest_start_time, earliest_end_time = timeframes[0].get_norm_times()
 
     # Looping through every timeframe to find the latest normalized start time and earliest normalized end time.
@@ -98,13 +92,47 @@ def find_shared_timeframe() -> Tuple[datetime, datetime] | None:
         if norm_end < earliest_end_time:
             earliest_end_time = norm_end
 
-    # If the latest start time is greater than or equal to the earliest end time, a shared timeframe does not exist.
-    if latest_start_time >= earliest_end_time:
-        return None
+    """
+    NOTE: If the latest start time >= the earliest end time, a common timeframe does not exist.
+    """
 
-    # Else, return the start and end times as a tuple.
+    # Common timeframe does not exist.
+    if latest_start_time >= earliest_end_time:
+        print("No common timeframe found among the timeframes provided.\n")
+
+    # A common timeframe exists.
     else:
-        return latest_start_time, earliest_end_time
+        """ Building the Duration string """
+        # Get the duration in seconds from the timedelta object.
+        duration = (earliest_end_time - latest_start_time).seconds
+
+        # Create duration string with number of hours.
+        duration_str = f"{duration // 3600} hour{'s' if duration >= 3600 * 2 else ''} " if duration >= 3600 else ""
+
+        # Get remainder seconds that do not make a full hour.
+        duration %= 3600
+
+        # Add number of minutes to duration string.
+        duration_str += f"{duration // 60} minute{'s' if duration % 3600 >= 60 * 2 else ''}" if duration >= 60 else ""
+
+        """ Constructing the Table of Localized Times """
+        # Get the table of localized times.
+        common_timeframe = (latest_start_time, earliest_end_time)
+        localized_table = construct_localized_times_table(TIMEFRAMES, common_timeframe)
+
+        """ Printing outputs """
+        # Convert the datetime objects to strings.
+        start_time = datetime.strftime(latest_start_time, DATETIME_FORMAT)
+        end_time = datetime.strftime(earliest_end_time, DATETIME_FORMAT)
+
+        # Print common timeframe and duration.
+        print(f"Common timeframe found.\n"
+              f"\nStart Time : {start_time} UTC"
+              f"\nEnd Time   : {end_time} UTC"
+              f"\nDuration   : {duration_str}\n")
+
+        # Print table of localized times.
+        print(localized_table)
 
 
 def remove_timeframe(timeframe_id: str) -> bool:
@@ -139,7 +167,7 @@ def reset() -> bool:
     print("Are you sure you want to reset this session? This will clear all stored timeframes. [N/y]\n")
     response = input(">> ")
 
-    if response.lower() in ["y", "yes"]:
+    if response.lower() in {"y", "yes"}:
         # Clearing all values in TIMEFRAMES.
         TIMEFRAMES.clear()
         print("Removed all timeframes.\n")
@@ -204,7 +232,7 @@ def main():
         # ADD
         if action == "add":
             # Number of arguments: Min number of arguments: 6. Max number of arguments: 7.
-            if len(command) not in [6, 7]:
+            if len(command) not in {6, 7}:
                 print(f"\nadd: Expected 6 or 7 arguments but found {len(command) - 1}."
                       f"\n     Required arguments: timeframe-id, utc-offset, start-date, start-time, end-date, end-time"
                       )
@@ -275,30 +303,15 @@ def main():
         # ---------- #
 
         # FIND / RUN / SYNC
-        elif action in ["find", "run", "sync"]:
+        elif action in {"find", "run", "sync"}:
             # Ensure there are more than 1 timeframes provided.
             if len(TIMEFRAMES) <= 1:
-                print(f"\nfind:{len(TIMEFRAMES)} timeframe(s) provided."
-                      "\n      Provide at least 2 timeframes to find a shared timeframe.")
+                print(f"\nfind: {len(TIMEFRAMES)} timeframe(s) provided."
+                      "\n      Provide at least 2 timeframes to find a common timeframe.")
                 continue
 
-            # Find the shared timeframe.
-            shared_timeframe = find_shared_timeframe()
-
-            # If None, shared time frame does not exist.
-            if shared_timeframe is not None:
-                # Split the shared timeframe tuple.
-                start_datetime, end_datetime = shared_timeframe
-
-                # Convert the datetime objects to strings.
-                start_datetime = datetime.strftime(start_datetime, DATETIME_FORMAT)
-                end_datetime = datetime.strftime(end_datetime, DATETIME_FORMAT)
-
-                # Print output.
-                print(f"Shared timeframe from {start_datetime} to {end_datetime} UTC+00:00.\n")
-
-            else:
-                print("No shared timeframe exists among the timeframes provided.\n")
+            # Find the common timeframe.
+            find_common_timeframe()
         # ---------- #
 
         # REMOVE
@@ -318,7 +331,7 @@ def main():
         # ---------- #
 
         # LIST
-        elif action in ["ls", "list"]:
+        elif action in {"ls", "list"}:
             list_timeframes()
         # ---------- #
 
@@ -339,12 +352,12 @@ def main():
         # ---------- #
 
         # EXIT
-        elif action in ["X", "exit", "quit"]:
+        elif action in {"X", "exit", "quit"}:
             # Prompt the user for confirmation.
             print("Are you sure you want to exit TimeSync? [N/y]")
             response = input(">> ")
 
-            if response.lower() in ["y", "yes"]:
+            if response.lower() in {"y", "yes"}:
                 break
         # ---------- #
 

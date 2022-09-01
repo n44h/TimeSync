@@ -2,8 +2,7 @@ from typing import Tuple
 from datetime import datetime, timedelta
 
 # Input Datetime formats.
-IN_DATETIME_FORMAT = '%d-%m-%y %H:%M'
-OUT_DATETIME_FORMAT = '%d-%m-%y %H:%M'
+DATETIME_FORMAT = '%d-%m-%y %H:%M'
 
 
 class TimeFrame:
@@ -20,17 +19,16 @@ class TimeFrame:
             end_time (datetime | str): end time of the time frame.
         """
 
-        # Splitting the offset into hour and min.
+        # Splitting the UTC offset into hour and min.
         self.offset_hour = int(utc_offset[:3])
         self.offset_min = int(utc_offset[4:])
 
-        # UTC Offset.
-        sign = "+" if self.offset_hour >= 0 else "-"
-        self.utc_offset = f"{sign}{abs(self.offset_hour):02}:{self.offset_min:02}"
+        # UTC Offset string.
+        self.utc_offset = f"{'+' if self.offset_hour >= 0 else '-'}{abs(self.offset_hour):02}:{self.offset_min:02}"
 
         # Create datetime objects for start and end time.
-        self.start_time = datetime.strptime(start_time, IN_DATETIME_FORMAT) if type(start_time) is str else start_time
-        self.end_time = datetime.strptime(end_time, IN_DATETIME_FORMAT) if type(end_time) is str else end_time
+        self.start_time = datetime.strptime(start_time, DATETIME_FORMAT) if type(start_time) is str else start_time
+        self.end_time = datetime.strptime(end_time, DATETIME_FORMAT) if type(end_time) is str else end_time
 
         # Check if the end time is earlier than start time.
         if self.end_time < self.start_time:
@@ -70,26 +68,37 @@ class TimeFrame:
 
         return self.utc_offset
 
-    def get_times_str(self, datetime_format: str = OUT_DATETIME_FORMAT) -> Tuple[str, str]:
-        """ Get the start and end times of the TimeFrame as str.
+    def to_local_time(self, times: list | tuple) -> list:
+        """ Convert UTC +00:00 time to the local timezone of the timeframe.
 
         Args:
-            datetime_format (str): Optional argument to modify the datetime string format. Default: DD-MM-YY HH:MM.
+            times: list of datetime objects in UTC +00:00 time that need to be converted to local time.
 
         Returns:
-              Tuple of containing the start and end times as strings.
+            list of localized times as strings.
         """
 
-        return self.start_time.strftime(datetime_format), self.end_time.strftime(datetime_format)
+        # Create the time delta object. timedelta accepts negative values in parameters.
+        delta = timedelta(hours=self.offset_hour, minutes=self.offset_min)
 
-    def get_norm_times_str(self, datetime_format: str = OUT_DATETIME_FORMAT) -> Tuple[str, str]:
-        """ Get the UTC+00:00 normalized start and end times of the TimeFrame as str.
+        # Calculate the localized time for each datetime object in "times" and convert them to strings.
+        localized_times = [(time + delta).strftime(DATETIME_FORMAT) for time in times]
 
-        Args:
-            datetime_format (str): Optional argument to modify the datetime string format. Default: DD-MM-YY HH:MM.
+        return localized_times
+
+    def get_attributes(self) -> tuple:
+        """ Get the attributes of the timeframe.
 
         Returns:
-              Tuple containing the normalized start and end times as strings.
+            a tuple containing the UTC offset, start time, end time, normalized start time, and normalized end time.
         """
 
-        return self.norm_start_time.strftime(datetime_format), self.norm_end_time.strftime(datetime_format)
+        # Convert the start/end times to strings.
+        start_time = self.start_time.strftime(DATETIME_FORMAT)
+        end_time = self.end_time.strftime(DATETIME_FORMAT)
+
+        # Convert the normalized start/end times to strings.
+        norm_start_time = self.norm_start_time.strftime(DATETIME_FORMAT)
+        norm_end_time = self.norm_end_time.strftime(DATETIME_FORMAT)
+
+        return self.utc_offset, start_time, end_time, norm_start_time, norm_end_time
