@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Tuple
+from datetime import datetime
 
 
 VALID_UTC_OFFSETS = ["-12:00", "-11:00", "-10:00", "-09:30", "-09:00", "-08:00", "-07:00", "-06:00", "-05:00", "-04:00",
@@ -243,67 +244,137 @@ def construct_timeframe_table(timeframes: dict) -> str:
 
     Returns:
         a table containing details about each timeframe as a multiline string.
-
     """
-    # Headers strings for each column.
-    column_headers = ["Timeframe ID", "UTC Offset", "Start Time", "End Time",
-                      "Normalized Start Time", "Normalized End Time"]
 
-    # Determining the width of the Timeframe ID column.
-    # The width is the length of the longest timeframe_id or the length of the column header, whichever is longer.
-    timeframe_id_col_width = max(len(max(timeframes.keys(), key=len)), len(column_headers[0]))
+    # Column headers for the table.
+    column_headers = [
+        "Timeframe ID", "UTC Offset", "Start Time", "End Time", "Normalized Start Time", "Normalized End Time"
+    ]
 
-    column_widths = [timeframe_id_col_width, 10, 14, 14, 21, 19]
+    # Create a new Table object.
+    table = Table(column_headers)
 
-    # delete timeframe_id_col_width.
-    del timeframe_id_col_width
-
-    # # Appending the column widths for the remaining columns 1 to (N-1), where N is the number of columns.
-    # # Add 2 to the column width to account for 1 leading and 1 trailing space.
-    # column_widths = column_widths + [len(header) for header in column_headers[1:]]
-
-    # Horizontal length of the output string.
-    # horizontal length = sum column widths  +
-    #                     1 leading and 1 trailing spaces in each column (= number_of_columns x 2) +
-    #                     number of column dividers "|" (= number_of_columns + 1)
-    horizontal_len = sum(column_widths) + len(column_widths)*2 + (len(column_widths) + 1)
-
-    # Adding the starting horizontal line.
-    output_string = ("-" * horizontal_len) + "\n"
-
-    # Adding the column headers' row.
-    for index, header in enumerate(column_headers):
-        output_string += f"| {header:{column_widths[index]}} "
-    output_string += "|\n"
-
-    # Adding the horizontal divider after the column headers.
-    # output_string += f"|{('-' * (horizontal_len - 2))}|\n"
-
-    for width in column_widths:
-        output_string += f"|{('-' * (width+2))}"
-    output_string += "|\n"
-
-    # Adding the timeframe ids and the respective timeframe information.
+    # Adding the rows.
     for timeframe_id, timeframe in timeframes.items():
-        # Getting the initial and normalized start and end times.
+        # Getting the attributes of the timeframe as a tuple.
+        attributes = timeframe.get_attributes()
+
+        # Adding the timeframe row to the table.
+        table.add_row([timeframe_id, *attributes])
+
+    return str(table)
+
+
+def construct_localized_times_table(timeframes: dict, common_timeframe: Tuple[datetime, datetime] = None):
+    """ Construct a table containing the localized times of the common timeframe for each timeframe.
+
+    Args:
+        timeframes (dict): timeframes to include in the table.
+        common_timeframe (tuple): the common timeframe of the timeframes.
+
+    Returns:
+        a table of the localized times as a multiline string
+    """
+
+    # Column headers for the table.
+    column_headers = ["Timeframe ID", "UTC Offset", "Start Time", "End Time"]
+
+    # Create a new Table object.
+    table = Table(column_headers)
+
+    # Adding the rows.
+    for timeframe_id, timeframe in timeframes.items():
+        # Getting the UTC offset of the timeframe.
         utc_offset = timeframe.get_utc_offset()
-        times = timeframe.get_times_str()
-        norm_times = timeframe.get_norm_times_str()
 
-        # Appending the timeframe_id.
-        output_string += f"| {timeframe_id:{column_widths[0]}} "
+        # Getting the localized start and end times.
+        localized_times = timeframe.to_local_time(common_timeframe)
 
-        # Appending the UTC offset.
-        output_string += f"| {utc_offset:{column_widths[1]}} "
+        # Adding the timeframe row to the table.
+        table.add_row([timeframe_id, utc_offset, *localized_times])
 
-        # Appending the start and end times.
-        output_string += f"| {times[0]:{column_widths[2]}} | {times[1]:{column_widths[3]}} "
+    return str(table)
 
-        # Appending the normalized start and end times. Adding the newline character at the end.
-        output_string += f"| {norm_times[0]:{column_widths[4]}} | {norm_times[1]:{column_widths[5]}} |\n"
 
-    # Add the ending line.
-    output_string += ("-" * horizontal_len) + "\n"
+class Table:
+    """
+    Class to create tables as multiline strings.
+    """
 
-    # Return the constructed string.
-    return output_string
+    def __init__(self, column_headers: list | tuple) -> None:
+        """
+        Args:
+            column_headers: column headers of the table.
+        """
+
+        # The table column headers.
+        self.column_headers = column_headers
+
+        # 2D list used to store values of the table. First row contains column headers.
+        self.table = [column_headers]
+
+        self.num_cols = len(column_headers)
+
+    def add_row(self, row_values: list | tuple) -> None:
+        """ Add a new row to the table.
+
+        Args:
+            row_values: list containing the values for each column of the row.
+        """
+
+        # Number of values in the row_values list must match the number of columns.
+        if len(row_values) != self.num_cols:
+            raise ValueError(f"Incorrect number of row values. Expected {self.num_cols} but got {len(row_values)}")
+
+        # Append the new row to the table.
+        self.table.append(row_values)
+
+    def __str__(self):
+        # List to store the widths of the longest value in each column.
+        column_widths = []
+
+        # Finding the length of the longest value for each column.
+        for col in range(self.num_cols):
+            # Finding the length of the longest value in current column.
+            longest_width = len(max([row[col] for row in self.table], key=len))
+
+            # Add the current column width to the list.
+            column_widths.append(longest_width)
+
+        # Horizontal length of the output string.
+        # horizontal length = sum column widths  +
+        #                     1 leading and 1 trailing spaces in each column (= number_of_columns x 2) +
+        #                     number of column dividers "|" (= number_of_columns + 1)
+        horizontal_len = sum(column_widths) + len(column_widths) * 2 + (len(column_widths) + 1)
+
+        # Adding the starting horizontal line.
+        output_string = ("-" * horizontal_len) + "\n"
+
+        # Adding the column headers' row.
+        for index, header in enumerate(self.column_headers):
+            output_string += f"| {header:{column_widths[index]}} "
+        output_string += "|\n"
+
+        # Adding divider after column headers.
+        for width in column_widths:
+            # Add 2 to the width to account for 1 leading whitespace and 1 trailing whitespace.
+            output_string += f"|{('-' * (width + 2))}"
+        output_string += "|\n"
+
+        # Traversing rows, excluding the headers row.
+        for row in self.table[1:]:
+            # Adding the values from each column of a row.
+            for index, element in enumerate(row):
+                output_string += f"| {element:{column_widths[index]}} "
+
+            # Add row-end vertical divider and new line character.
+            output_string += "|\n"
+
+        # Add the ending line.
+        output_string += ("-" * horizontal_len) + "\n"
+
+        # Return the constructed string.
+        return output_string
+
+    def __repr__(self):
+        self.__str__()
