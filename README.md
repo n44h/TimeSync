@@ -4,10 +4,10 @@ TimeSync is a tool to find the longest common timeframe out of the inputed timef
 
 ### How TimeSync works:
 
-The start and end points of each timeframe are normalized to UTC +00:00 time.
+The start and end times of each timeframe are normalized to UTC +00:00 time.
 
-Then, the latest normalized start point is taken as the start point of the shared timeframe.
-Similarly, the earliest normalized end point is taken as the end point of the shared timeframe.
+The latest normalized start time is taken as the start time of the common timeframe.
+Similarly, the earliest normalized end time is taken as the end time of the common timeframe.
 
 A timeframe is one continuous period of time and cannot include breaks or intervals.
 
@@ -68,22 +68,9 @@ Let's call this one _bar_.
 
 ___
 
-### Find a shared Timeframe
+### List Timeframes
 
-Find the longest shared timeframe among the stored timeframes.  
-Ensure at least 2 timeframes have been added before performing this action.
-
-To find shared timeframe: `run`, `find`, `sync`
-
-```shell
->> run
-```
-
-___
-
-### List all Timeframes
-
-To list all the stored Timeframes: `ls`, `list`
+Command to list the stored Timeframes: `ls`, `list`
 
 ```shell
 >> ls
@@ -99,6 +86,38 @@ Will print a table as shown below:
 | bar          | -01:00     | 12-08-22 12:00 | 12-08-22 18:30 | 12-08-22 13:00        | 12-08-22 19:30      |
 | bang         | -05:00     | 12-08-22 08:20 | 12-08-22 17:45 | 12-08-22 13:20        | 12-08-22 22:45      |
 -------------------------------------------------------------------------------------------------------------
+```
+
+___
+
+### Find a common Timeframe
+
+Find the longest common timeframe among the stored timeframes.  
+Ensure at least 2 timeframes have been added before performing this action.
+
+Command to find common timeframe: `run`, `find`, `sync`
+
+```shell
+>> run
+```
+
+If a common timeframe exists, its start/end times and duration are printed.  
+Additionally, a table of localized times for each timeframe is displayed as shown below.  
+
+```shell
+Common timeframe found.
+
+Start Time : 12-08-22 13:20 UTC
+End Time   : 12-08-22 16:00 UTC
+Duration   : 2 hours 40 minutes
+
+---------------------------------------------------------------
+| Timeframe ID | UTC Offset | Start Time     | End Time       |
+|--------------|------------|----------------|----------------|
+| foo          | +04:00     | 12-08-22 17:20 | 12-08-22 20:00 |
+| bar          | -01:00     | 12-08-22 12:20 | 12-08-22 15:00 |
+| bang         | -05:00     | 12-08-22 08:20 | 12-08-22 11:00 |
+---------------------------------------------------------------
 ```
 
 ___
