@@ -1,19 +1,19 @@
 # TimeSync
 
-TimeSync is a tool to find the longest common timeframe out of the inputed timeframes in different timezones. Refer to the [Commands section](#commands) to see how to use TimeSync.
+TimeSync is a tool to find the longest common timeframe out of the inputted timeframes in different timezones. Refer to the [Commands section](#commands) to see how to use TimeSync.
 
 ### How TimeSync works:
 
 The start and end times of each timeframe are normalized to UTC +00:00 time.
 
-The latest normalized start time is taken as the start time of the common timeframe.
+The latest normalized start time is taken as the start time of the common timeframe.  
 Similarly, the earliest normalized end time is taken as the end time of the common timeframe.
 
 A timeframe is one continuous period of time and cannot include breaks or intervals.
 
 
 ## Formats
-The formatting rules are very relaxed for time and UTC offsets.
+The formatting rules are very relaxed for time and UTC offset inputs.
 If there is an intuitive way
 to represent the input, TimeSync will internally format it to the proper format.  
 
