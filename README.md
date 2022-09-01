@@ -70,7 +70,7 @@ ___
 
 ### List Timeframes
 
-Command to list the stored Timeframes: `ls`, `list`
+Command to list the stored timeframes: `ls`, `list`
 
 ```shell
 >> ls
