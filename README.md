@@ -1,6 +1,6 @@
 # TimeSync
 
-TimeSync is a tool that finds the longest common timeframe out of the inputed timeframes in different timezones. Refer to the [Commands section](#commands) to see how to use TimeSync.
+TimeSync is a tool to find the longest common timeframe out of the inputed timeframes in different timezones. Refer to the [Commands section](#commands) to see how to use TimeSync.
 
 ### How TimeSync works:
 
