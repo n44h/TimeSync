@@ -2,7 +2,7 @@ import sys
 from datetime import datetime
 
 from timeframe import TimeFrame
-from utils import clear_screen, format_time, format_utc_offset, is_valid_datetime, is_valid_offset, \
+from utils import clear_screen, format_time, format_utc_offset, format_date, is_valid_datetime, is_valid_offset, \
     generate_timeframe_table, generate_localized_times_table, generate_visualization_table, get_duration_string
 
 # Datetime format.
@@ -299,6 +299,9 @@ def main():
             # Breakdown the command.
             timeframe_id = command[1]
 
+            # Format the date string.
+            command[3] = format_date(command[3])
+
             # Format UTC offset string.
             try:
                 utc_offset = format_utc_offset(command[2])
@@ -316,7 +319,7 @@ def main():
             # Format end time string.
             try:
                 # If 6 arguments are provided, use the start date as the end date.
-                end_time = f"{command[3] if len(command) == 6 else command[5]} {format_time(command[-1])}"
+                end_time = f"{command[3] if len(command) == 6 else format_date(command[5])} {format_time(command[-1])}"
             except ValueError as ve:
                 print(f"end-time: {ve}\n")
                 continue
