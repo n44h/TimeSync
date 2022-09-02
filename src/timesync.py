@@ -3,10 +3,13 @@ from datetime import datetime
 
 from timeframe import TimeFrame
 from utils import clear_screen, format_time, format_utc_offset, is_valid_datetime, is_valid_offset, \
-    construct_timeframe_table, construct_localized_times_table
+    construct_timeframe_table, construct_localized_times_table, construct_visualization_table, get_duration_string
 
 # Datetime format.
 DATETIME_FORMAT = "%d-%m-%y %H:%M"
+
+# Maximum number of characters in one line that can be used to visualize the timeframes.
+MAX_CHARACTER_LENGTH = 100
 
 # Dict to store the timeframes. Timeframes are stored as {timeframe_id: TimeFrame_object}
 TIMEFRAMES = {}
@@ -103,17 +106,11 @@ def find_common_timeframe() -> None:
     # A common timeframe exists.
     else:
         """ Building the Duration string """
-        # Get the duration in seconds from the timedelta object.
-        duration = (earliest_end_time - latest_start_time).seconds
+        # Get the duration in seconds from the timedelta object. Then divide by 60 to convert it to minutes.
+        duration = (earliest_end_time - latest_start_time).seconds // 60
 
-        # Create duration string with number of hours.
-        duration_str = f"{duration // 3600} hour{'s' if duration >= 3600 * 2 else ''} " if duration >= 3600 else ""
-
-        # Get remainder seconds that do not make a full hour.
-        duration %= 3600
-
-        # Add number of minutes to duration string.
-        duration_str += f"{duration // 60} minute{'s' if duration % 3600 >= 60 * 2 else ''}" if duration >= 60 else ""
+        # Generate the duration string.
+        duration_str = get_duration_string(duration)
 
         """ Constructing the Table of Localized Times """
         # Get the table of localized times.
@@ -133,6 +130,67 @@ def find_common_timeframe() -> None:
 
         # Print table of localized times.
         print(localized_table)
+
+
+def visualize_timeframes():
+    """ Visualize the timeframes side-by-side to see how they overlap. """
+
+    # Create a list containing just the timeframe objects (the value attributes) from the TIMEFRAMES dictionary.
+    timeframes = list(TIMEFRAMES.values())
+
+    # Initialize (earliest_start_time, latest_end_time) as the normalized (start, end) times of the 0th timeframe.
+    earliest_start_time, latest_end_time = timeframes[0].get_norm_times()
+
+    # Looping through every timeframe to find the latest normalized start time and earliest normalized end time.
+    for timeframe in timeframes[1:]:
+        # Get the normalized start and end times for the TimeFrame object.
+        norm_start, norm_end = timeframe.get_norm_times()
+
+        # Assign the current timeframe's normalized start time to earliest_start_time if it is earlier.
+        if norm_start < earliest_start_time:
+            earliest_start_time = norm_start
+
+        # Assign the current timeframe's normalized end time to latest_end_time if it is later.
+        if norm_end > latest_end_time:
+            latest_end_time = norm_end
+
+    # Find the difference between the earliest start time and the latest end time and convert it to minutes.
+    difference = (latest_end_time - earliest_start_time).seconds // 60
+
+    # If the difference is too large to visualize on screen, skip visualization.
+    # Difference cannot be longer than N number of days, where N = MAX_CHARACTER_LENGTH.
+    if difference > MAX_CHARACTER_LENGTH * 24 * 60:
+        print("vis: cannot print visualization, duration too large.")
+        return
+
+    # Initialize weight to None.
+    weight = None
+    # Smaller weights.
+    weights = [1, 5, 10, 15, 20, 25, 30, 45]
+
+    # Check if any of the smaller weights are suitable.
+    for wt in weights:
+        if difference / wt < MAX_CHARACTER_LENGTH:
+            weight = wt
+            break
+
+    # If none of the smaller weights were suitable, look for suitable weight in multiples of 30. (1, 1.5, 2, 2.5 hours)
+    if weight is None:
+        for multiplier in range(2, 50):
+            weight = 30 * multiplier
+            if difference / weight < MAX_CHARACTER_LENGTH:
+                break
+
+    """ Get the duration string """
+    weight_str = get_duration_string(weight)
+
+    """ Printing the Visualization """
+    # Print legend.
+    print(f"| = {weight_str}\n")
+
+    # Construct and print the visualization table.
+    vis_table = construct_visualization_table(TIMEFRAMES, weight, earliest_start_time)
+    print(vis_table)
 
 
 def remove_timeframe(timeframe_id: str) -> bool:
@@ -337,7 +395,7 @@ def main():
 
         # VISUALIZE
         elif action == "vis":
-            pass
+            visualize_timeframes()
         # ---------- #
 
         # CLEAR
