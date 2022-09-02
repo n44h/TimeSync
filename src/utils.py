@@ -30,24 +30,25 @@ def format_time(time_str: str) -> str:
     NOTE: Correct time string format: HH:MM 
     """
 
-    # Basic validations.
+    """ Validation 1 """
     # time_str should not contain more than 1 colon character.
     if time_str.count(":") > 1:
         raise ValueError("time string cannot contain more than one \":\" character.")
-
-    # Besides one colon ":" character, time_str should only contain digits.
-    elif time_str.replace(":", "").isdigit() is False:
-        raise ValueError("time strings can only contain digits and \":\" characters.")
-
-    # Get the time string length.
-    length = len(time_str)
 
     # Check 1
     #
     # Time string is empty or only contains a colon.
     #
-    if time_str in ["", ":"]:
+    if time_str in {"", ":"}:
         return "00:00"
+
+    """ Validation 2 """
+    # Besides one colon ":" character, time_str should only contain digits.
+    if time_str.replace(":", "").isdigit() is False:
+        raise ValueError("time strings can only contain digits and \":\" characters.")
+
+    # Get the time string length.
+    length = len(time_str)
 
     # Check 2
     #
@@ -55,7 +56,7 @@ def format_time(time_str: str) -> str:
     #
     # Possible inputs:  4 -> 04:00
     #
-    elif length == 1:
+    if length == 1:
         return f"0{time_str}:00"
 
     # Check 3
