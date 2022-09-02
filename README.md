@@ -39,7 +39,7 @@ The above-mentioned formats are accepted for UTC offset inputs as well.
 Additionally, inputs without a sign will be assumed to be a positive UTC offset.
 
 #### Date Inputs
-A simple `*` can be entered in place of the date argument to indicate to TimeSync to use today's date.
+A simple `*` can be entered in place of the date argument to indicate to TimeSync that today's date should be used.
 Appending `+` signs to the above-mentioned shorthand will add that many days to the current date.
 
 For example, if today's date is 12-08-22:
