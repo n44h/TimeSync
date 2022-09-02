@@ -1,6 +1,5 @@
 import os
 import re
-from math import ceil
 from typing import Tuple
 from datetime import datetime, timedelta
 
@@ -260,15 +259,6 @@ def get_duration_string(minutes: int) -> str:
     duration_str += f"{minutes} minute{'s' if minutes % 60 >= 2 else ''}" if minutes >= 1 else ""
 
     return duration_str
-
-
-def round_to_multiple(number: int, multiple: int = 10, always_round_up: bool = True) -> int:
-    # Always rounds up to the next multiple.
-    if always_round_up:
-        return multiple * ceil(number / multiple)
-    # Rounds to the nearest multiple.
-    else:
-        return multiple * round(number / multiple)
 
 
 def construct_timeframe_table(timeframes: dict) -> str:
