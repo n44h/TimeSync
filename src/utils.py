@@ -355,7 +355,7 @@ def construct_visualization_table(timeframes: dict, weight: int, earliest_start_
         # Visualization string.
         vis_string = ""
 
-        while reference_datetime <= end_time:
+        while reference_datetime < end_time:
             # Add a "|" if the reference_datetime is within the timeframe. Else, print a whitespace.
             vis_string += "|" if start_time <= reference_datetime else " "
 
