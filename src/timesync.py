@@ -3,7 +3,7 @@ from datetime import datetime
 
 from timeframe import TimeFrame
 from utils import clear_screen, format_time, format_utc_offset, is_valid_datetime, is_valid_offset, \
-    construct_timeframe_table, construct_localized_times_table, construct_visualization_table, get_duration_string
+    generate_timeframe_table, generate_localized_times_table, generate_visualization_table, get_duration_string
 
 # Datetime format.
 DATETIME_FORMAT = "%d-%m-%y %H:%M"
@@ -112,10 +112,10 @@ def find_common_timeframe() -> None:
         # Generate the duration string.
         duration_str = get_duration_string(duration)
 
-        """ Constructing the Table of Localized Times """
+        """ Generating the Table of Localized Times """
         # Get the table of localized times.
         common_timeframe = (latest_start_time, earliest_end_time)
-        localized_table = construct_localized_times_table(TIMEFRAMES, common_timeframe)
+        localized_table = generate_localized_times_table(TIMEFRAMES, common_timeframe)
 
         """ Printing outputs """
         # Convert the datetime objects to strings.
@@ -188,8 +188,8 @@ def visualize_timeframes():
     # Print legend.
     print(f"| = {weight_str}\n")
 
-    # Construct and print the visualization table.
-    vis_table = construct_visualization_table(TIMEFRAMES, weight, earliest_start_time)
+    # Generate and print the visualization table.
+    vis_table = generate_visualization_table(TIMEFRAMES, weight, earliest_start_time)
     print(vis_table)
 
 
@@ -239,7 +239,7 @@ def list_timeframes() -> None:
     """ Prints a table of UTC offsets, start/end times and normalized start/end times of the timeframes. """
 
     # Creating the timeframes table as a multiline string.
-    timeframes_table = construct_timeframe_table(TIMEFRAMES)
+    timeframes_table = generate_timeframe_table(TIMEFRAMES)
 
     # Print the timeframes table.
     print(timeframes_table)

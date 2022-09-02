@@ -261,8 +261,8 @@ def get_duration_string(minutes: int) -> str:
     return duration_str
 
 
-def construct_timeframe_table(timeframes: dict) -> str:
-    """ Constructs a table containing the timeframe IDs, UTC offsets, start/end times and normalized start/end times
+def generate_timeframe_table(timeframes: dict) -> str:
+    """ Generate a table containing the timeframe IDs, UTC offsets, start/end times and normalized start/end times
     of the timeframes.
 
     Used in the 'list' action in TimeSync.
@@ -293,8 +293,8 @@ def construct_timeframe_table(timeframes: dict) -> str:
     return str(table)
 
 
-def construct_localized_times_table(timeframes: dict, common_timeframe: Tuple[datetime, datetime] = None):
-    """ Construct a table containing the localized times of the common timeframe for each timeframe.
+def generate_localized_times_table(timeframes: dict, common_timeframe: Tuple[datetime, datetime] = None):
+    """ Generate a table containing the localized times of the common timeframe for each timeframe.
 
     Args:
         timeframes (dict): timeframes to include in the table.
@@ -324,7 +324,7 @@ def construct_localized_times_table(timeframes: dict, common_timeframe: Tuple[da
     return str(table)
 
 
-def construct_visualization_table(timeframes: dict, weight: int, earliest_start_time: datetime) -> str:
+def generate_visualization_table(timeframes: dict, weight: int, earliest_start_time: datetime) -> str:
     # Column headers for the table.
     column_headers = ["Timeframe ID", "Representation"]
 
