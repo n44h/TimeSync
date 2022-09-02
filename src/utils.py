@@ -1,7 +1,8 @@
 import os
 import re
+from math import ceil
 from typing import Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 VALID_UTC_OFFSETS = ["-12:00", "-11:00", "-10:00", "-09:30", "-09:00", "-08:00", "-07:00", "-06:00", "-05:00", "-04:00",
@@ -233,6 +234,43 @@ def is_valid_offset(input_offset: str) -> Tuple[bool, str]:
     return flag, error_message
 
 
+def get_duration_string(minutes: int) -> str:
+    """ Builds a string of format "DD days HH hours MM minutes" from inputted minutes.
+
+    Args:
+        minutes (int): input in minutes.
+
+    Returns:
+        a string in the format "DD days HH hours MM minutes".
+    """
+
+    # Create duration string with number of days.
+    duration_str = f"{minutes // (24 * 60)} day{'s' if minutes >= 24 * 60 * 2 else ''} " if minutes >= 24 * 60 else ""
+
+    # Get remainder minutes that do not make a full day.
+    minutes %= (24 * 60)
+
+    # Create duration string with number of hours.
+    duration_str += f"{minutes // 60} hour{'s' if minutes >= 60 * 2 else ''} " if minutes >= 60 else ""
+
+    # Get remainder minutes that do not make a full hour.
+    minutes %= 60
+
+    # Add number of minutes to duration string.
+    duration_str += f"{minutes} minute{'s' if minutes % 60 >= 2 else ''}" if minutes >= 1 else ""
+
+    return duration_str
+
+
+def round_to_multiple(number: int, multiple: int = 10, always_round_up: bool = True) -> int:
+    # Always rounds up to the next multiple.
+    if always_round_up:
+        return multiple * ceil(number / multiple)
+    # Rounds to the nearest multiple.
+    else:
+        return multiple * round(number / multiple)
+
+
 def construct_timeframe_table(timeframes: dict) -> str:
     """ Constructs a table containing the timeframe IDs, UTC offsets, start/end times and normalized start/end times
     of the timeframes.
@@ -246,9 +284,9 @@ def construct_timeframe_table(timeframes: dict) -> str:
         a table containing details about each timeframe as a multiline string.
     """
 
-    # Column headers for the table.
+    # Column headers for the table. Added 2 extra spaces at the end of "Normalized End Time" for symmetry in the table.
     column_headers = [
-        "Timeframe ID", "UTC Offset", "Start Time", "End Time", "Normalized Start Time", "Normalized End Time"
+        "Timeframe ID", "UTC Offset", "Start Time", "End Time", "Normalized Start Time", "Normalized End Time  "
     ]
 
     # Create a new Table object.
@@ -292,6 +330,40 @@ def construct_localized_times_table(timeframes: dict, common_timeframe: Tuple[da
 
         # Adding the timeframe row to the table.
         table.add_row([timeframe_id, utc_offset, *localized_times])
+
+    return str(table)
+
+
+def construct_visualization_table(timeframes: dict, weight: int, earliest_start_time: datetime) -> str:
+    # Column headers for the table.
+    column_headers = ["Timeframe ID", "Representation"]
+
+    # Create a new Table object.
+    table = Table(column_headers)
+
+    # Create timedelta object.
+    delta = timedelta(minutes=weight)
+
+    # Adding the rows.
+    for timeframe_id, timeframe in timeframes.items():
+        # Reference datetime is used to keep track of the
+        reference_datetime = earliest_start_time
+
+        # Get the normalized start/end times for the timeframe.
+        start_time, end_time = timeframe.get_norm_times()
+
+        # Visualization string.
+        vis_string = ""
+
+        while reference_datetime <= end_time:
+            # Add a "|" if the reference_datetime is within the timeframe. Else, print a whitespace.
+            vis_string += "|" if start_time <= reference_datetime else " "
+
+            # Update the reference_datetime.
+            reference_datetime += delta
+
+        # Adding the timeframe id and vis string to the table.
+        table.add_row([timeframe_id, vis_string])
 
     return str(table)
 
