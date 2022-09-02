@@ -2,7 +2,7 @@ import sys
 from datetime import datetime
 
 from timeframe import TimeFrame
-from utils import clear_screen, format_time, format_utc_offset, is_valid_datetime, is_valid_offset, round_to_multiple,\
+from utils import clear_screen, format_time, format_utc_offset, is_valid_datetime, is_valid_offset, \
     construct_timeframe_table, construct_localized_times_table, construct_visualization_table, get_duration_string
 
 # Datetime format.
@@ -163,35 +163,30 @@ def visualize_timeframes():
         print("vis: cannot print visualization, duration too large.")
         return
 
-    # Calculate the weight of each "|" in the visualization. eg. each "|" = 30 minutes in the visualization.
-    weight = difference / MAX_CHARACTER_LENGTH
+    # Initialize weight to None.
+    weight = None
+    # Smaller weights.
+    weights = [1, 5, 10, 15, 20, 25, 30, 45]
 
-    # If the difference is less than 60 minutes, round to next multiple of 5.
-    if difference < 60:
-        weight = round_to_multiple(weight, multiple=5)
+    # Check if any of the smaller weights are suitable.
+    for wt in weights:
+        if difference / wt < MAX_CHARACTER_LENGTH:
+            weight = wt
+            break
 
-    # If the difference is less than 24 hours, round to next multiple of 15.
-    elif difference < (6 * 60):
-        weight = round_to_multiple(weight, multiple=15)
-
-    # If the difference is less than 48 hours, round to next multiple of 30.
-    elif difference < (12 * 60):
-        weight = round_to_multiple(weight, multiple=30)
-
-    # If the difference is less than 96 hours, round to next multiple of 60.
-    elif difference < (24 * 60):
-        weight = round_to_multiple(weight, multiple=60)
-
-    # If the difference is any greater, round to next multiple of 1 day (= 24 * 60 minutes).
-    else:
-        weight = round_to_multiple(weight, multiple=24*60)
+    # If none of the smaller weights were suitable, look for suitable weight in multiples of 30. (1, 1.5, 2, 2.5 hours)
+    if weight is None:
+        for multiplier in range(2, 50):
+            weight = 30 * multiplier
+            if difference / weight < MAX_CHARACTER_LENGTH:
+                break
 
     """ Get the duration string """
     weight_str = get_duration_string(weight)
 
     """ Printing the Visualization """
     # Print legend.
-    print(f"One \"|\" = {weight_str}\n")
+    print(f"| = {weight_str}\n")
 
     # Construct and print the visualization table.
     vis_table = construct_visualization_table(TIMEFRAMES, weight, earliest_start_time)
