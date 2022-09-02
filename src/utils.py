@@ -186,6 +186,45 @@ def format_utc_offset(utc_offset_str: str) -> str:
     return f"{sign}{time_str}"
 
 
+def format_date(date_str: str) -> str:
+    """ Rectifies incorrectly formatted date strings.
+
+    Args:
+        date_str: date string to format.
+
+    Returns:
+        the date string with the correct format.
+    """
+
+    # If a "*" is inputted, return the current system date.
+    if date_str == "*":
+        # Get current date.
+        dt = datetime.today()
+
+        return dt.strftime("%d-%m-%y")
+
+    # If a "*" is followed by one or more "+", add as many days to today's date as there are "+" signs.
+    # e.g. if today is 12-08-22, the input "*+++" would have the output "15-08-22".
+    elif set(date_str) == {"*", "+"} or {"+"} == set(date_str):
+        # How many days to add.
+        iterations = date_str.count("+")
+
+        # Get current date.
+        dt = datetime.today()
+
+        # Create timedelta object for 1 day.
+        delta = timedelta(days=1)
+
+        # Add the specified number of days.
+        for i in range(iterations):
+            dt += delta
+
+        return dt.strftime("%d-%m-%y")
+
+    else:
+        return date_str
+
+
 def is_valid_datetime(in_datetime: str) -> bool:
     """ Checks if a datetime string has the format DD-MM-YYYY HH:MM.
 
