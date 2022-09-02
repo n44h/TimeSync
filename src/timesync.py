@@ -414,12 +414,7 @@ def main():
 
         # EXIT
         elif action in {"X", "exit", "quit"}:
-            # Prompt the user for confirmation.
-            print("Are you sure you want to exit TimeSync? [N/y]")
-            response = input(">> ")
-
-            if response.lower() in {"y", "yes"}:
-                break
+            break
         # ---------- #
 
         # INVALID COMMAND
