@@ -139,7 +139,7 @@ Duration   : 2 hours 40 minutes
 
 ___
 
-### Visualize the Timeframes
+### Visualize Timeframes
 
 Visualize the timeframes and how they overlap.  
 
