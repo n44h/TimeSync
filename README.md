@@ -38,6 +38,23 @@ to represent the input, TimeSync will internally format it to the proper format.
 The above-mentioned formats are accepted for UTC offset inputs as well.  
 Additionally, inputs without a sign will be assumed to be a positive UTC offset.
 
+#### Date Inputs
+A simple `*` can be entered in place of the date argument to indicate to TimeSync to use today's date.
+Appending `+` signs to the above-mentioned shorthand will add that many days to the current date.
+
+For example, if today's date is 12-08-22:
+
+| Date Input | How it will be formatted |
+|------------|--------------------------|
+| *          | 12-08-22                 |
+| *+         | 13-08-22                 |
+| *+++       | 15-08-22                 |
+| +          | 13-08-22                 |
+| ++         | 14-08-22                 |
+
+___
+
+
 ## Commands
 
 ### Add a Timeframe
@@ -79,13 +96,13 @@ Command to list the stored timeframes: `ls`, `list`
 Will print a table as shown below:
 
 ```shell
--------------------------------------------------------------------------------------------------------------
-| Timeframe ID | UTC Offset | Start Time     | End Time       | Normalized Start Time | Normalized End Time |
-|--------------|------------|----------------|----------------|-----------------------|---------------------|
-| foo          | +04:00     | 12-08-22 09:00 | 12-08-22 20:00 | 12-08-22 05:00        | 12-08-22 16:00      |
-| bar          | -01:00     | 12-08-22 12:00 | 12-08-22 18:30 | 12-08-22 13:00        | 12-08-22 19:30      |
-| bang         | -05:00     | 12-08-22 08:20 | 12-08-22 17:45 | 12-08-22 13:20        | 12-08-22 22:45      |
--------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+| Timeframe ID | UTC Offset | Start Time     | End Time       | Normalized Start Time | Normalized End Time   |
+|--------------|------------|----------------|----------------|-----------------------|-----------------------|
+| foo          | +04:00     | 12-08-22 09:00 | 12-08-22 20:00 | 12-08-22 05:00        | 12-08-22 16:00        |
+| bar          | -01:00     | 12-08-22 12:00 | 12-08-22 18:30 | 12-08-22 13:00        | 12-08-22 19:30        |
+| bang         | -05:00     | 12-08-22 08:20 | 12-08-22 17:45 | 12-08-22 13:20        | 12-08-22 22:45        |
+---------------------------------------------------------------------------------------------------------------
 ```
 
 ___
@@ -118,6 +135,28 @@ Duration   : 2 hours 40 minutes
 | bar          | -01:00     | 12-08-22 12:20 | 12-08-22 15:00 |
 | bang         | -05:00     | 12-08-22 08:20 | 12-08-22 11:00 |
 ---------------------------------------------------------------
+```
+
+___
+
+### Visualize the Timeframes
+
+Visualize the timeframes and how they overlap.  
+
+Command to visualize: `vis`  
+
+Will produce an output as shown below:
+
+```shell
+| = 15 minutes
+
+------------------------------------------------------------------------------------------
+| Timeframe ID | Representation                                                          |
+|--------------|-------------------------------------------------------------------------|
+| foo          | ||||||||||||||||||||||||||||||||||||||||||||                            |
+| bar          |                                 ||||||||||||||||||||||||||              |
+| bang         |                                   ||||||||||||||||||||||||||||||||||||| |
+------------------------------------------------------------------------------------------
 ```
 
 ___
