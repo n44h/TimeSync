@@ -263,7 +263,7 @@ def is_valid_offset(input_offset: str) -> Tuple[bool, str]:
     # Match input_offset argument with offset regex.
     if not offset_re.match(input_offset):
         flag = False
-        error_message = "Incorrect format of UTC offset. Expected format: ±HHMM."
+        error_message = "Incorrect format of UTC offset. Expected format: ±HH:MM."
 
     elif input_offset not in VALID_UTC_OFFSETS:
         flag = False
@@ -333,7 +333,7 @@ def generate_timeframe_table(timeframes: dict) -> str:
     return str(table)
 
 
-def generate_localized_times_table(timeframes: dict, common_timeframe: Tuple[datetime, datetime] = None):
+def generate_localized_times_table(timeframes: dict, common_timeframe: Tuple[datetime, datetime] = None) -> str:
     """ Generate a table containing the localized times of the common timeframe for each timeframe.
 
     Args:
