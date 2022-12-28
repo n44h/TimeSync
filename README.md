@@ -118,10 +118,10 @@ ___
 Find the longest common timeframe among the stored timeframes.  
 Ensure at least 2 timeframes have been added before performing this action.
 
-Command to find common timeframe: `run`, `find`, `sync`
+Command to find common timeframe: `find`
 
 ```shell
->> run
+>> find
 ```
 
 If a common timeframe exists, its start/end times and duration are printed.  
@@ -150,6 +150,10 @@ ___
 Visualize the timeframes and how they overlap.  
 
 Command to visualize: `vis`  
+
+```shell
+>> vis
+```
 
 Will produce an output as shown below:
 
