@@ -40,7 +40,8 @@ Additionally, inputs without a sign will be assumed to be a positive UTC offset.
 
 #### Date Inputs
 A simple `*` can be entered in place of the date argument to indicate to TimeSync that today's date should be used.
-Appending `+` signs to the above-mentioned shorthand will add that many days to the current date.
+Appending `+` signs to the above-mentioned shorthand will add that many days to the current date.   
+It is also possible to omit the `*` entirely when using `+` (see examples below).
 
 For example, if today's date is 12-08-22:
 
@@ -81,6 +82,11 @@ Let's call this one _bar_.
 
 ```shell
 >> add bar +06 12-08-22 1025 13-08-22 1530
+```
+
+The same command can be written using the date input shorthand (assume today's date is 12-08-22):
+```shell
+>> add bar +06 * 1025 *+ 1530
 ```
 
 ___
